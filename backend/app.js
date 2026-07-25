@@ -7,6 +7,7 @@ import morgan from "morgan";
 import compression from "compression";
 import userRoutes from "./routes/user.route.js";
 import categoryRoutes from "./routes/category.route.js";
+import productRoutes from "./routes/product.route.js";
 
 dotenv.config();
 
@@ -35,5 +36,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/products", productRoutes);
 
 export default app;
