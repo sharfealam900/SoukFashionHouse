@@ -2,7 +2,6 @@ import React from 'react'
 import Navbar from '../Components/Navbar'
 import Hero from '../Components/Hero'
 
-import Products from '../Components/Product/Products'
 import Story from '../Components/Story'
 import Instagram from '../Components/Instagrams/Instagram'
 import Testimonial from '../Components/Testimonial'
@@ -12,6 +11,8 @@ import WhatsappButton from '../Components/Buttons/WhatsappButton'
 import BackToTop from '../Components/Buttons/BackToTop'
 import Category from '../Components/Category'
 import TopTicker from '../Components/TopTicker'
+import BestSeller from '../Components/Product/BestSeller'
+import NewArrival from '../Components/Product/NewArrival'
 
 export default function Home() {
   return (
@@ -20,7 +21,9 @@ export default function Home() {
     <Hero/>
     <TopTicker/>
     <Category/>
-    <Products/>
+    <BestSeller />
+  <NewArrival />
+  
     <Story/>
     <Instagram/>
     <Testimonial/>

@@ -30,14 +30,22 @@ const productSchema = new mongoose.Schema(
       default: "",
     },
 
+    gender: {
+      type: String,
+      enum: ["Men", "Women", "Kids", "Unisex"],
+      default: "Unisex",
+    },
+
     price: {
       type: Number,
       required: true,
     },
 
-    discountPrice: {
+    discount: {
       type: Number,
       default: 0,
+      min: 0,
+      max: 100,
     },
 
     stock: {
@@ -45,9 +53,16 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
 
+    totalSold: {
+      type: Number,
+      default: 0,
+    },
+
     sku: {
       type: String,
       unique: true,
+      required: true,
+      trim: true,
     },
 
     images: [

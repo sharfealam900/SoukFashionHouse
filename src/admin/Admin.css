@@ -1,0 +1,145 @@
+/* ===========================
+   ADMIN LAYOUT
+=========================== */
+
+.admin-wrapper{
+    display:flex;
+    min-height:100vh;
+    background:#f5f6fa;
+}
+
+/* ===========================
+   SIDEBAR
+=========================== */
+
+.admin-sidebar{
+    width:260px;
+    background:#111827;
+    color:#fff;
+    flex-shrink:0;
+}
+
+.admin-logo{
+    padding:22px;
+    text-align:center;
+    font-size:26px;
+    font-weight:700;
+    border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.admin-sidebar .nav-link{
+    color:#d1d5db;
+    padding:15px 22px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    transition:.3s;
+    font-size:16px;
+}
+
+.admin-sidebar .nav-link:hover{
+    background:#1f2937;
+    color:#fff;
+}
+
+.admin-sidebar .nav-link.active{
+    background:#0d6efd;
+    color:#fff;
+}
+
+/* ===========================
+   CONTENT
+=========================== */
+
+.admin-content{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+
+.admin-header{
+    background:#fff;
+    height:70px;
+    padding:0 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.admin-main{
+    padding:30px;
+}
+
+.dashboard-card{
+    border:none;
+    border-radius:14px;
+    transition:.3s;
+}
+
+.dashboard-card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+
+.dashboard-card h6{
+    color:#6c757d;
+    margin-bottom:12px;
+}
+
+.dashboard-card h2{
+    font-size:34px;
+    font-weight:700;
+}
+
+
+/* ================= Dashboard ================= */
+
+.dashboard-card{
+    border:none;
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+    transition:.3s;
+}
+
+.dashboard-card:hover{
+    transform:translateY(-6px);
+}
+
+.dashboard-card .card-body{
+    padding:28px;
+}
+
+.dashboard-card h6{
+    color:#6c757d;
+    margin-top:15px;
+}
+
+.dashboard-card h2{
+    font-size:34px;
+    font-weight:700;
+}
+
+.dashboard-icon{
+    font-size:42px;
+}
+
+.users-card .dashboard-icon{
+    color:#0d6efd;
+}
+
+.products-card .dashboard-icon{
+    color:#20c997;
+}
+
+.orders-card .dashboard-icon{
+    color:#fd7e14;
+}
+
+.revenue-card .dashboard-icon{
+    color:#198754;
+}

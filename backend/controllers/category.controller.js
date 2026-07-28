@@ -50,8 +50,7 @@ export const createCategory = async (req, res) => {
 // Get all categories
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
-
+    const categories = await Category.find().sort({ name: 1 });
     res.status(200).json({
       success: true,
       count: categories.length,
@@ -97,6 +96,20 @@ export const updateCategory = async (req, res) => {
     const slug = name
       ? name.toLowerCase().trim().replace(/\s+/g, "-")
       : undefined;
+
+    if (name) {
+      const existing = await Category.findOne({
+        slug,
+        _id: { $ne: req.params.id },
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: "Category already exists",
+        });
+      }
+    }
 
     const category = await Category.findByIdAndUpdate(
       req.params.id,

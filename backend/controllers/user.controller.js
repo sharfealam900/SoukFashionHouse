@@ -27,6 +27,11 @@ export const registerUser = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+
+        console.log("Original Password:", password);
+
+        console.log("Hashed Password:", hashedPassword);
+
         // Create user
         const user = await User.create({
             name,
@@ -83,8 +88,12 @@ export const loginUser = async (req, res) => {
         }
 
         // Compare password
+        console.log("Entered Password:", password);
+        console.log("Stored Hash:", user.password);
+
         const isPasswordMatch = await bcrypt.compare(password, user.password);
 
+        console.log("Password Match:", isPasswordMatch);
         if (!isPasswordMatch) {
             return res.status(401).json({
                 success: false,
@@ -93,7 +102,7 @@ export const loginUser = async (req, res) => {
         }
 
         // Generate token
-        const token = generateToken(user._id);
+        generateToken(res, user._id);
 
         res.status(200).json({
             success: true,
@@ -126,4 +135,58 @@ export const logoutUser = (req, res) => {
         success: true,
         message: "Logged out successfully",
     });
+};
+
+
+export const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
