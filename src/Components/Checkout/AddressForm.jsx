@@ -1,9 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
 
 export default function AddressForm({
   shippingAddress,
   setShippingAddress,
+  useProfileAddress,
+  setUseProfileAddress,
 }) {
+  const { user } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (user && useProfileAddress) {
+      setShippingAddress({
+        fullName: user.name || "",
+        phone: user.phone || "",
+        email: user.email || "",
+        address: user.address || "",
+      });
+    }
+  }, [user, useProfileAddress, setShippingAddress]);
 
   const handleChange = (e) => {
     setShippingAddress((prev) => ({
@@ -12,75 +27,133 @@ export default function AddressForm({
     }));
   };
 
+  const handleProfileAddress = () => {
+    setUseProfileAddress(true);
+
+    setShippingAddress({
+      fullName: user?.name || "",
+      phone: user?.phone || "",
+      email: user?.email || "",
+      address: user?.address || "",
+    });
+  };
+
+  const handleAnotherAddress = () => {
+    setUseProfileAddress(false);
+
+    setShippingAddress({
+      fullName: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
+  };
+
   return (
     <div className="checkout-card">
+
       <h3 className="checkout-title">
-        Shipping Address
+        Delivery Address
       </h3>
 
-      <div className="checkout-form">
+      {/* Default Address */}
 
-        <input
-          type="text"
-          name="fullName"
-          placeholder="Full Name"
-          value={shippingAddress.fullName}
-          onChange={handleChange}
-        />
+      <div className="border rounded p-3 mb-4">
 
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone Number"
-          value={shippingAddress.phone}
-          onChange={handleChange}
-        />
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={shippingAddress.email}
-          onChange={handleChange}
-        />
-
-        <textarea
-          name="address"
-          placeholder="House No, Street, Area..."
-          rows="4"
-          value={shippingAddress.address}
-          onChange={handleChange}
-        />
-
-        <div className="checkout-grid">
+        <label className="d-flex align-items-start gap-2">
 
           <input
-            type="text"
-            name="city"
-            placeholder="City"
-            value={shippingAddress.city}
-            onChange={handleChange}
+            type="radio"
+            checked={useProfileAddress}
+            onChange={handleProfileAddress}
           />
 
-          <input
-            type="text"
-            name="state"
-            placeholder="State"
-            value={shippingAddress.state}
-            onChange={handleChange}
-          />
+          <div>
 
-        </div>
+            <strong>
+              Use My Default Address
+            </strong>
 
-        <input
-          type="text"
-          name="pincode"
-          placeholder="PIN Code"
-          value={shippingAddress.pincode}
-          onChange={handleChange}
-        />
+            <div className="mt-2">
+
+              <div>{user?.name}</div>
+
+              <div>{user?.phone}</div>
+
+              <div>{user?.email}</div>
+
+              <div style={{ whiteSpace: "pre-line" }}>
+                {user?.address || "No address saved"}
+              </div>
+
+            </div>
+
+          </div>
+
+        </label>
 
       </div>
+
+      {/* Another Address */}
+
+      <div className="border rounded p-3">
+
+        <label className="d-flex align-items-center gap-2 mb-3">
+
+          <input
+            type="radio"
+            checked={!useProfileAddress}
+            onChange={handleAnotherAddress}
+          />
+
+          <strong>
+            Deliver To Another Address
+          </strong>
+
+        </label>
+
+        {!useProfileAddress && (
+
+          <div className="checkout-form">
+
+            <input
+              type="text"
+              name="fullName"
+              placeholder="Full Name"
+              value={shippingAddress.fullName}
+              onChange={handleChange}
+            />
+
+            <input
+              type="text"
+              name="phone"
+              placeholder="Phone Number"
+              value={shippingAddress.phone}
+              onChange={handleChange}
+            />
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={shippingAddress.email}
+              onChange={handleChange}
+            />
+
+            <textarea
+              rows={5}
+              name="address"
+              placeholder="Complete Shipping Address"
+              value={shippingAddress.address}
+              onChange={handleChange}
+            />
+
+          </div>
+
+        )}
+
+      </div>
+
     </div>
   );
 }

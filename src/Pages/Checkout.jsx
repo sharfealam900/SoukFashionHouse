@@ -13,10 +13,15 @@ export default function Checkout() {
         phone: "",
         email: "",
         address: "",
-        city: "",
-        state: "",
-        pincode: "",
     });
+
+    const [couponCode, setCouponCode] = useState("");
+    const [discountAmount, setDiscountAmount] = useState(0);
+    const [finalAmount, setFinalAmount] = useState(null);
+    const [couponApplied, setCouponApplied] = useState(false);
+
+    const [useProfileAddress, setUseProfileAddress] =
+        useState(true);
 
     const [paymentMethod, setPaymentMethod] = useState("COD");
     return (
@@ -35,21 +40,35 @@ export default function Checkout() {
                         <AddressForm
                             shippingAddress={shippingAddress}
                             setShippingAddress={setShippingAddress}
+                            useProfileAddress={useProfileAddress}
+                            setUseProfileAddress={setUseProfileAddress}
                         />
                     </div>
 
                     <div className="checkout-right">
-                        <OrderSummary />
+                        <OrderSummary
+                            couponCode={couponCode}
+                            setCouponCode={setCouponCode}
+                            discountAmount={discountAmount}
+                            setDiscountAmount={setDiscountAmount}
+                            finalAmount={finalAmount}
+                            setFinalAmount={setFinalAmount}
+                            couponApplied={couponApplied}
+                            setCouponApplied={setCouponApplied}
+                        />
+
                         <PaymentMethod
                             paymentMethod={paymentMethod}
                             setPaymentMethod={setPaymentMethod}
                         />
+
                         <PlaceOrder
                             shippingAddress={shippingAddress}
                             paymentMethod={paymentMethod}
+                            useProfileAddress={useProfileAddress}
+                            couponCode={couponCode}
                         />
                     </div>
-
                 </div>
 
             </section>

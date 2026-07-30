@@ -41,14 +41,39 @@ const userSchema = new mongoose.Schema(
     },
 
     avatar: {
-      type: String,
-      default: "",
+      public_id: {
+        type: String,
+        default: "",
+      },
+      url: {
+        type: String,
+        default: "",
+      },
     },
 
     isVerified: {
       type: Boolean,
       default: false,
     },
+
+    address: {
+      type: String,
+      default: "",
+    },
+
+
+    lastLogin: {
+      type: Date,
+    },
+
+
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+
+
+
   },
   {
     timestamps: true,

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { getDashboardStats } from "../services/adminApi";
 import "../Admin.css";
+import RevenueChart from "../components/dashboard/RevenueChart";
+import OrdersChart from "../components/dashboard/OrdersChart";
+import TopProducts from "../components/dashboard/TopProducts";
+import LowStockProducts from "../components/dashboard/LowStock";
+import CategorySalesChart from "../components/dashboard/CategorySalesChart";
+import NotificationsPanel from "../components/dashboard/NotificationsPanel";
 
 export default function Dashboard() {
     const [stats, setStats] = useState(null);
@@ -102,7 +108,57 @@ export default function Dashboard() {
                 </div>
 
             </div>
-            <div className="card shadow-sm mt-4">
+
+
+
+            {/* ===================== Stats Cards ===================== */}
+            <div className="row g-4">
+                {/* Your Stat Cards */}
+            </div>
+
+         
+
+            {/* ===================== Revenue ===================== */}
+            <div className="row g-4 mt-2">
+                <div className="col-12">
+                    <RevenueChart />
+                </div>
+            </div>
+
+            {/* ===================== Analytics ===================== */}
+            <div className="row g-4 mt-2">
+
+                {/* Order Status */}
+                <div className="col-lg-4">
+                    <OrdersChart />
+                </div>
+
+                {/* Top Selling Products */}
+                <div className="col-lg-8">
+                    <TopProducts />
+                </div>
+
+            </div>
+
+            {/* ===================== Inventory ===================== */}
+            <div className="row g-4 mt-2">
+
+                {/* Low Stock */}
+                <div className="col-lg-5">
+                    <LowStockProducts />
+                </div>
+
+                {/* Category Sales */}
+                <div className="col-lg-7">
+                    <CategorySalesChart />
+                </div>
+            </div>
+
+
+
+
+
+            <div className="card shadow-sm mt-4" height={300}>
                 <div className="card-header bg-white">
                     <h5 className="mb-0">Recent Orders</h5>
                 </div>
@@ -130,8 +186,8 @@ export default function Dashboard() {
                                         <td>
                                             <span
                                                 className={`badge ${order.paymentStatus === "Paid"
-                                                        ? "bg-success"
-                                                        : "bg-warning text-dark"
+                                                    ? "bg-success"
+                                                    : "bg-warning text-dark"
                                                     }`}
                                             >
                                                 {order.paymentStatus}

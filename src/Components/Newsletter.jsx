@@ -1,48 +1,86 @@
-import React from 'react'
+import React, { useState } from "react";
+import toast from "react-hot-toast";
+import api from "../api/axios";
+
 
 export default function Newsletter() {
-    return (
-        <>
-            <section className="newsletter">
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-                <div className="container">
+  const subscribeHandler = async (e) => {
+    e.preventDefault();
 
-                    <div className="newsletter-content">
+    if (!email.trim()) {
+      return toast.error("Please enter your email.");
+    }
 
-                        <span className="newsletter-tag">
-                            Stay in the Loop
-                        </span>
+    try {
+      setLoading(true);
 
-                        <h2>
-                            Get First Access
-                            <br />
-                            to New Arrivals
-                        </h2>
+      const { data } = await api.post("/subscribers", {
+        email,
+      });
 
-                        <p>
-                            Join our newsletter for exclusive launches,
-                            festive collections, special discounts,
-                            and styling inspiration.
-                        </p>
+      toast.success(
+        data.message || "Subscribed successfully."
+      );
 
-                        <form className="newsletter-form">
+      setEmail("");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Subscription failed."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                            />
+  return (
+    <section className="newsletter">
+      <div className="container">
+        <div className="newsletter-content">
+          <span className="newsletter-tag">
+            Stay in the Loop
+          </span>
 
-                            <button>
-                                Subscribe
-                            </button>
+          <h2>
+            Get First Access
+            <br />
+            to New Arrivals
+          </h2>
 
-                        </form>
+          <p>
+            Join our newsletter for exclusive launches,
+            festive collections, special discounts,
+            and styling inspiration.
+          </p>
 
-                    </div>
+          <form
+            className="newsletter-form"
+            onSubmit={subscribeHandler}
+          >
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              required
+            />
 
-                </div>
-
-            </section>
-        </>
-    )
+            <button
+              type="submit"
+              disabled={loading}
+            >
+              {loading
+                ? "Subscribing..."
+                : "Subscribe"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
 }

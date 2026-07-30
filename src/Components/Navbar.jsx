@@ -5,6 +5,10 @@ import api from "../api/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../features/auth/authSlice";
+import { clearWishlist } from "../features/wishlist/wishlistSlice";
+import { clearCart } from "../features/cart/cartSlice";
+import logo from "../assets/logo.jpg";
+
 
 
 
@@ -25,6 +29,7 @@ export default function Navbar() {
   );
 
 
+
   const [mobileMenu, setMobileMenu] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -38,10 +43,10 @@ export default function Navbar() {
 
 
 
+
   useEffect(() => {
     getCategories();
   }, []);
-
 
 
   useEffect(() => {
@@ -115,27 +120,29 @@ export default function Navbar() {
 
   const logoutHandler = async () => {
     try {
-      await api.get("/user/logout");
-
       dispatch(logout());
-
-      navigate("/login");
+      dispatch(clearWishlist());
+      dispatch(clearCart());
 
       setProfileDropdown(false);
-
       setMobileMenu(false);
+
+      await api.post("/users/logout");
+
+      navigate("/", { replace: true });
+
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
-  
+
   return (
     <header className={scrolled ? "navbar active" : "navbar"}>
       <div className="navbar-container">
         {/* Logo */}
 
         <Link to="/" className="logo">
-          SOUK
+          <img src={logo} alt="Logo" width={150} />
         </Link>
 
         {/* Desktop Menu */}
@@ -155,9 +162,9 @@ export default function Navbar() {
             >
               Categories
               <ChevronDown
-  size={16}
-  className={dropdown ? "chevron rotate" : "chevron"}
-/>
+                size={16}
+                className={dropdown ? "chevron rotate" : "chevron"}
+              />
             </button>
 
             {dropdown && (
@@ -302,7 +309,7 @@ export default function Navbar() {
                     </Link>
 
                     <Link
-                      to="/orders"
+                      to="/my-orders"
                       onClick={() =>
                         setProfileDropdown(false)
                       }

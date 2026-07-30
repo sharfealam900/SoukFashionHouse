@@ -1,6 +1,7 @@
 import Order from "../models/order.model.js";
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
+import Coupon from "../models/coupon.model.js";
 
 /* ============================
    PLACE ORDER
@@ -10,7 +11,27 @@ export const placeOrder = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const { shippingAddress, paymentMethod } = req.body;
+    const { shippingAddress, paymentMethod, couponCode } = req.body;
+
+    const {
+      fullName,
+      phone,
+      email,
+      address,
+    } = shippingAddress;
+
+    if (
+      !fullName ||
+      !phone ||
+      !email ||
+      !address
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Shipping address is required",
+      });
+    }
+
 
     const cart = await Cart.findOne({
       user: userId,
@@ -23,10 +44,17 @@ export const placeOrder = async (req, res) => {
       });
     }
 
+
     let totalAmount = 0;
+    let discountAmount = 0;
+    let finalAmount = 0;
+    let appliedCoupon = null;
+
     const orderItems = [];
 
+    // First calculate subtotal
     for (const item of cart.items) {
+
       const product = item.product;
 
       if (!product) {
@@ -36,7 +64,6 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      // Stock validation
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
@@ -44,12 +71,11 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      // Calculate discounted price
-      const discount = Number(product.discount || 0);
+      const productDiscount = Number(product.discount || 0);
 
       const price =
         product.price -
-        (product.price * discount) / 100;
+        (product.price * productDiscount) / 100;
 
       totalAmount += price * item.quantity;
 
@@ -61,18 +87,120 @@ export const placeOrder = async (req, res) => {
         price,
       });
 
-      // Reduce stock
       product.stock -= item.quantity;
       await product.save();
     }
+
+
+
+
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({
+        code: couponCode.toUpperCase(),
+      });
+
+      if (!coupon) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid coupon.",
+        });
+      }
+
+      if (!coupon.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon is inactive.",
+        });
+      }
+
+      if (coupon.expiresAt < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon has expired.",
+        });
+      }
+
+      if (coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon usage limit exceeded.",
+        });
+      }
+
+      if (totalAmount < coupon.minimumOrderAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `Minimum order amount is ₹${coupon.minimumOrderAmount}`,
+        });
+      }
+
+      if (coupon.discountType === "percentage") {
+        discountAmount =
+          (totalAmount * coupon.discountValue) / 100;
+
+        if (coupon.maximumDiscount) {
+          discountAmount = Math.min(
+            discountAmount,
+            coupon.maximumDiscount
+          );
+        }
+      } else {
+        discountAmount = coupon.discountValue;
+      }
+
+      appliedCoupon = coupon;
+    }
+
+    finalAmount = Math.max(
+      totalAmount - discountAmount,
+      0
+    );
+
+    // Apply coupon discount to each item price
+    if (discountAmount > 0) {
+
+      const ratio = finalAmount / totalAmount;
+
+      orderItems.forEach((item) => {
+
+        item.price = Number(
+          (item.price * ratio).toFixed(2)
+        );
+
+      });
+
+    }
+
 
     const order = await Order.create({
       user: userId,
       items: orderItems,
       shippingAddress,
       paymentMethod,
+
       totalAmount,
+      discountAmount,
+      finalAmount,
+
+      coupon: appliedCoupon
+        ? appliedCoupon._id
+        : null,
+
+      couponCode: appliedCoupon
+        ? appliedCoupon.code
+        : "",
     });
+
+
+
+    if (appliedCoupon) {
+      appliedCoupon.usedCount += 1;
+      await appliedCoupon.save();
+    }
+
+
+
 
     // Clear cart
     cart.items = [];
@@ -82,6 +210,9 @@ export const placeOrder = async (req, res) => {
       success: true,
       message: "Order placed successfully",
       order,
+      totalAmount,
+      discountAmount,
+      finalAmount,
     });
 
   } catch (error) {

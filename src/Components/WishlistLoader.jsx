@@ -14,6 +14,7 @@ export default function WishlistLoader() {
     (state) => state.auth
   );
 
+  
   useEffect(() => {
     const fetchWishlist = async () => {
       if (!isAuthenticated) {

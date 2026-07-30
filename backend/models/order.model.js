@@ -42,30 +42,25 @@ const orderSchema = new mongoose.Schema(
       fullName: {
         type: String,
         required: true,
+        trim: true,
       },
+
       phone: {
         type: String,
         required: true,
+        trim: true,
       },
+
+      email: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
       address: {
         type: String,
         required: true,
-      },
-      city: {
-        type: String,
-        required: true,
-      },
-      state: {
-        type: String,
-        required: true,
-      },
-      postalCode: {
-        type: String,
-        required: true,
-      },
-      country: {
-        type: String,
-        default: "India",
+        trim: true,
       },
     },
 
@@ -98,6 +93,31 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
+
+    coupon: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Coupon",
+  default: null,
+},
+
+couponCode: {
+  type: String,
+  default: "",
+},
+
+discountAmount: {
+  type: Number,
+  default: 0,
+},
+
+finalAmount: {
+  type: Number,
+  required: true,
+},
+
+
+
   },
   {
     timestamps: true,

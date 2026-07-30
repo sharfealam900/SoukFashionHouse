@@ -143,3 +143,66 @@
 .revenue-card .dashboard-icon{
     color:#198754;
 }
+
+
+
+/* Pagination in Admin Order */
+
+.pagination{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:15px;
+    padding:20px;
+}
+
+.pagination button{
+    padding:8px 18px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#0d6efd;
+    color:#fff;
+    transition:.3s;
+}
+
+.pagination button:hover:not(:disabled){
+    background:#0b5ed7;
+}
+
+.pagination button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.pagination span{
+    font-weight:600;
+}
+
+
+.btn-warning{
+    background:#f59e0b;
+    color:#fff;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.btn-warning:hover{
+    background:#d97706;
+}
+
+.btn-success{
+    background:#16a34a;
+    color:#fff;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+}
