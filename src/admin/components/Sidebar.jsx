@@ -58,6 +58,18 @@ export default function Sidebar() {
           Coupons
         </NavLink>
 
+
+        <NavLink
+          to="/admin/contact"
+          className="nav-link"
+        >
+          <i className="bi bi-chat-dots"></i>
+          Contact Messages
+        </NavLink>
+
+
+
+
         <NavLink
           to="/admin/subscribers"
           className="nav-link"

@@ -29,10 +29,10 @@ export default function Login() {
             dispatch(setLoading(true));
 
             const { data } = await loginUser(formData);
-            
+
 
             dispatch(setUser(data.user));
-          
+
 
             toast.success(data.message);
 
@@ -82,6 +82,20 @@ export default function Login() {
                             required
                         />
                     </div>
+
+
+                    <div className="text-end mb-3">
+                        <Link
+                            to="/forgot-password"
+                            className="text-decoration-none"
+                        >
+                            Forgot Password?
+                        </Link>
+                    </div>
+
+
+
+
 
                     <button
                         type="submit"

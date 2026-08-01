@@ -2,6 +2,7 @@ import Order from "../models/order.model.js";
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 import Coupon from "../models/coupon.model.js";
+import ExcelJS from "exceljs";
 
 /* ============================
    PLACE ORDER
@@ -388,6 +389,7 @@ export const updateOrderStatus = async (req, res) => {
       "Confirmed",
       "Packed",
       "Shipped",
+      "Out for Delivery",
       "Delivered",
       "Cancelled",
     ];
@@ -408,12 +410,18 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const wasDelivered =
-      order.orderStatus === "Delivered";
+    // Don't update if already same status
+    if (order.orderStatus === orderStatus) {
+      return res.status(400).json({
+        success: false,
+        message: `Order is already ${orderStatus}`,
+      });
+    }
 
+    // If delivered for first time
     if (
       orderStatus === "Delivered" &&
-      !wasDelivered
+      order.orderStatus !== "Delivered"
     ) {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
@@ -431,13 +439,20 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Update current status
     order.orderStatus = orderStatus;
+
+    // Save tracking history
+    order.trackingHistory.push({
+      status: orderStatus,
+      updatedAt: new Date(),
+    });
 
     await order.save();
 
     res.status(200).json({
       success: true,
-      message: "Order status updated successfully",
+      message: "Order status updated successfully.",
       order,
     });
 
@@ -446,5 +461,219 @@ export const updateOrderStatus = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+
+
+export const getOrderReport = async (req, res) => {
+  try {
+    const {
+      from,
+      to,
+      orderStatus,
+      paymentStatus,
+    } = req.query;
+
+    const filter = {};
+
+    // Date Filter
+    if (from || to) {
+      filter.createdAt = {};
+
+      if (from) {
+        filter.createdAt.$gte = new Date(from);
+      }
+
+      if (to) {
+        const endDate = new Date(to);
+        endDate.setHours(23, 59, 59, 999);
+
+        filter.createdAt.$lte = endDate;
+      }
+    }
+
+    // Order Status
+    if (orderStatus && orderStatus !== "All") {
+      filter.orderStatus = orderStatus;
+    }
+
+    // Payment Status
+    if (paymentStatus && paymentStatus !== "All") {
+      filter.paymentStatus = paymentStatus;
+    }
+
+    const orders = await Order.find(filter)
+      .populate("user", "name email")
+      .populate("items.product")
+      .sort({ createdAt: -1 });
+
+    const summary = {
+      totalOrders: orders.length,
+
+      totalRevenue: orders.reduce(
+        (acc, order) =>
+          acc + order.finalAmount,
+        0
+      ),
+
+      delivered: orders.filter(
+        (o) =>
+          o.orderStatus === "Delivered"
+      ).length,
+
+      pending: orders.filter(
+        (o) =>
+          o.orderStatus === "Pending"
+      ).length,
+
+      cancelled: orders.filter(
+        (o) =>
+          o.orderStatus === "Cancelled"
+      ).length,
+
+      paid: orders.filter(
+        (o) =>
+          o.paymentStatus === "Paid"
+      ).length,
+
+      unpaid: orders.filter(
+        (o) =>
+          o.paymentStatus === "Pending"
+      ).length,
+    };
+
+    res.status(200).json({
+      success: true,
+      summary,
+      totalOrders: orders.length,
+      orders,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};
+
+
+
+
+
+export const exportOrdersExcel = async (req, res) => {
+  try {
+
+    const workbook = new ExcelJS.Workbook();
+
+    const worksheet = workbook.addWorksheet("Orders");
+
+    worksheet.columns = [
+      { header: "Order ID", key: "orderId", width: 20 },
+      { header: "Customer", key: "customer", width: 25 },
+      { header: "Phone", key: "phone", width: 18 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Products", key: "products", width: 45 },
+      { header: "Quantity", key: "qty", width: 12 },
+      { header: "Payment", key: "payment", width: 15 },
+      { header: "Payment Status", key: "paymentStatus", width: 18 },
+      { header: "Order Status", key: "orderStatus", width: 18 },
+      { header: "Amount", key: "amount", width: 15 },
+      { header: "Date", key: "date", width: 20 },
+    ];
+
+    const orders = await Order.find()
+      .populate("user")
+      .populate("items.product")
+      .sort({ createdAt: -1 });
+
+    orders.forEach((order) => {
+
+      worksheet.addRow({
+
+        orderId: order._id
+          .toString()
+          .slice(-8)
+          .toUpperCase(),
+
+        customer: order.shippingAddress.fullName,
+
+        phone: order.shippingAddress.phone,
+
+        email: order.shippingAddress.email,
+
+        products: order.items
+          .map((item) => item.product?.name)
+          .join(", "),
+
+        qty: order.items.reduce(
+          (sum, item) => sum + item.quantity,
+          0
+        ),
+
+        payment: order.paymentMethod,
+
+        paymentStatus: order.paymentStatus,
+
+        orderStatus: order.orderStatus,
+
+        amount: order.finalAmount,
+
+        date: new Date(
+          order.createdAt
+        ).toLocaleDateString(),
+
+      });
+
+    });
+
+    worksheet.getRow(1).font = {
+      bold: true,
+    };
+
+    worksheet.getRow(1).alignment = {
+      vertical: "middle",
+      horizontal: "center",
+    };
+
+    worksheet.eachRow((row) => {
+
+      row.eachCell((cell) => {
+
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+          bottom: { style: "thin" },
+        };
+
+      });
+
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Orders-${Date.now()}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+
+    res.end();
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
   }
 };

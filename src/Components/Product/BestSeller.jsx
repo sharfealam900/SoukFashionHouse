@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+
 import api from "../../api/axios";
 import ProductCard from "./ProductCard";
 
+import "swiper/css";
+import "swiper/css/navigation";
+
 export default function BestSeller() {
     const [products, setProducts] = useState([]);
+    const prevRef = useRef(null);
+    const nextRef = useRef(null);
 
     useEffect(() => {
         getProducts();
@@ -13,7 +21,7 @@ export default function BestSeller() {
     const getProducts = async () => {
         try {
             const { data } = await api.get("/products/best-sellers");
-            setProducts(data.products);
+            setProducts(data.products || []);
         } catch (error) {
             console.error(error);
         }
@@ -38,9 +46,9 @@ export default function BestSeller() {
                         </h2>
 
                         <p>
-                            Discover timeless fashion pieces loved by our
-                            customers. Carefully curated designs that blend
-                            elegance, comfort, and everyday style.
+                            Discover timeless fashion pieces loved by our customers.
+                            Carefully curated designs that blend elegance, comfort,
+                            and everyday style.
                         </p>
 
                     </div>
@@ -54,22 +62,68 @@ export default function BestSeller() {
 
                 </div>
 
-                {/* Products */}
+                <div className="best-seller-slider">
+                    <button ref={prevRef} className="slider-btn prev">
+                        &#10094;
+                    </button>
 
-                <div className="row g-4">
+                    <Swiper
+                        modules={[Navigation]}
+                        navigation={{
+                            prevEl: prevRef.current,
+                            nextEl: nextRef.current,
+                        }}
+                        onSwiper={(swiper) => {
+                            setTimeout(() => {
+                                if (
+                                    swiper.params.navigation &&
+                                    typeof swiper.params.navigation !== "boolean"
+                                ) {
+                                    swiper.params.navigation.prevEl = prevRef.current;
+                                    swiper.params.navigation.nextEl = nextRef.current;
+                                }
 
-                    {products.map((product) => (
+                                swiper.navigation.destroy();
+                                swiper.navigation.init();
+                                swiper.navigation.update();
+                            });
+                        }}
+                        spaceBetween={30}
+                        slidesPerView={4}
+                        slidesPerGroup={4}
+                        speed={600}
+                        loop={products.length > 4}
+                        breakpoints={{
+                            0: {
+                                slidesPerView: 1,
+                                slidesPerGroup: 1,
+                            },
+                            576: {
+                                slidesPerView: 2,
+                                slidesPerGroup: 2,
+                            },
+                            768: {
+                                slidesPerView: 3,
+                                slidesPerGroup: 3,
+                            },
+                            1200: {
+                                slidesPerView: 4,
+                                slidesPerGroup: 4,
+                            },
+                        }}
+                    >
+                        {products.map((product) => (
+                            <SwiperSlide key={product._id}>
+                                <ProductCard product={product} />
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
 
-                        <div
-                            className="col-xl-3 col-lg-4 col-md-6"
-                            key={product._id}
-                        >
-                            <ProductCard product={product} />
-                        </div>
-
-                    ))}
-
+                    <button ref={nextRef} className="slider-btn next">
+                        &#10095;
+                    </button>
                 </div>
+
 
             </div>
         </section>

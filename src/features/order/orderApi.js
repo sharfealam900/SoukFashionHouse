@@ -27,3 +27,13 @@ export const updateOrderStatus = (orderId, orderStatus) =>
   api.put(`/admin/orders/${orderId}`, {
     orderStatus,
   });
+
+
+
+  export const exportOrdersExcel = () =>
+  api.get(
+    "/orders/admin/export/excel",
+    {
+      responseType: "blob",
+    }
+  );

@@ -2,47 +2,162 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import generateToken from "../utils/generateToken.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
+import sendEmail from "../utils/sendEmail.js";
+import Otp from "../models/otp.model.js";
+import crypto from "crypto";
+import ResetOtp from "../models/resetOtp.model.js";
+
 
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const {
+            name,
+            email,
+            password,
+            confirmPassword,
+            phone,
+        } = req.body;
 
-        // Check required fields
-        if (!name || !email || !password) {
+        if (
+            confirmPassword !== undefined &&
+            password !== confirmPassword
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Please fill all required fields",
+                message: "Passwords do not match.",
             });
         }
 
-        // Check existing user
-        const existingUser = await User.findOne({ email });
+        // Validate required fields
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Please fill all required fields.",
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({
+            email,
+        });
 
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "Email already exists",
+                message: "Email already exists.",
             });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Remove any previous OTP for this email
+        await Otp.deleteOne({ email });
 
-        // Create user
-        const user = await User.create({
+        // Hash password
+        const hashedPassword = await bcrypt.hash(
+            password,
+            10
+        );
+
+        // Generate 6-digit OTP
+        const otp = crypto
+            .randomInt(100000, 999999)
+            .toString();
+
+        // Save temporary registration
+        await Otp.create({
             name,
             email,
             password: hashedPassword,
             phone,
+            otp,
+            expiresAt: new Date(
+                Date.now() + 10 * 60 * 1000
+            ), // 10 minutes
         });
 
-        // Generate JWT
+        // Send response immediately
+        res.status(200).json({
+            success: true,
+            message: "OTP sent to your email.",
+        });
+
+        // Send email in background
+        sendEmail(
+            email,
+            "Verify Your Email",
+            otp
+        )
+            .then(() => {
+                console.log(
+                    `✅ OTP sent successfully to ${email}`
+                );
+            })
+            .catch((error) => {
+                console.error(
+                    `❌ Failed to send OTP to ${email}:`,
+                    error.message
+                );
+
+                // Optional: remove OTP if email sending fails
+                Otp.deleteOne({ email }).catch(() => { });
+            });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
+
+
+
+export const verifyRegisterOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and OTP are required.",
+            });
+        }
+
+        const otpData = await Otp.findOne({ email });
+
+        if (!otpData) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP expired or not found.",
+            });
+        }
+
+        if (otpData.otp !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP.",
+            });
+        }
+
+        const user = await User.create({
+            name: otpData.name,
+            email: otpData.email,
+            password: otpData.password,
+            phone: otpData.phone,
+            isVerified: true,
+        });
+
+        await Otp.deleteOne({ email });
 
         generateToken(res, user._id);
 
         res.status(201).json({
             success: true,
-            message: "User registered successfully",
+            message: "Email verified successfully.",
             user: {
                 id: user._id,
                 name: user.name,
@@ -51,16 +166,86 @@ export const registerUser = async (req, res) => {
                 address: user.address,
                 avatar: user.avatar,
                 role: user.role,
-            }
+            },
         });
 
     } catch (error) {
+
         res.status(500).json({
             success: false,
             message: error.message,
         });
+
     }
 };
+
+
+
+
+
+
+
+export const resendRegisterOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required.",
+            });
+        }
+
+        const otpData = await Otp.findOne({ email });
+
+        if (!otpData) {
+            return res.status(404).json({
+                success: false,
+                message: "Registration session expired. Please register again.",
+            });
+        }
+
+        // Generate new OTP
+        const otp = crypto
+            .randomInt(100000, 999999)
+            .toString();
+
+        otpData.otp = otp;
+
+        otpData.expiresAt = new Date(
+            Date.now() + 10 * 60 * 1000
+        );
+
+        await otpData.save();
+
+        // Send email in background
+        sendEmail(
+            email,
+            "Verify Your Email",
+            otp
+        ).catch((error) => {
+            console.error(error);
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "A new OTP has been sent to your email.",
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+};
+
+
+
+
+
 
 
 
@@ -411,4 +596,247 @@ export const toggleBlockUser = async (req, res) => {
             message: error.message,
         });
     }
+};
+
+
+
+
+
+export const testEmail = async (req, res) => {
+    try {
+        await sendEmail(
+            req.body.email,
+            "SOUK Fashion House OTP",
+            "123456"
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Email sent successfully.",
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required.",
+            });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "No account found with this email.",
+            });
+        }
+
+        await ResetOtp.deleteOne({ email });
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+
+        await ResetOtp.create({
+            email,
+            otp,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "OTP sent to your email.",
+        });
+
+        sendEmail(email, "Reset Your Password", otp)
+            .then(() => {
+                console.log(`✅ Reset OTP sent to ${email}`);
+            })
+            .catch((error) => {
+                console.error(error);
+                ResetOtp.deleteOne({ email }).catch(() => { });
+            });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
+
+
+
+export const verifyResetOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and OTP are required.",
+            });
+        }
+
+        const otpData = await ResetOtp.findOne({ email });
+
+        if (!otpData) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP expired or not found.",
+            });
+        }
+
+        if (otpData.otp !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP.",
+            });
+        }
+        otpData.isVerified = true;
+
+        await otpData.save();
+
+        res.status(200).json({
+            success: true,
+            message: "OTP verified successfully.",
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, password, confirmPassword } = req.body;
+
+        if (!email || !password || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required.",
+            });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Passwords do not match.",
+            });
+        }
+
+        const otpData = await ResetOtp.findOne({ email });
+
+        if (!otpData.isVerified) {
+            return res.status(400).json({
+                success: false,
+                message: "Please verify OTP first.",
+            });
+        }
+
+        if (!otpData) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP verification expired.",
+            });
+        }
+
+        const user = await User.findOne({ email }).select("+password");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        user.password = await bcrypt.hash(password, 10);
+
+        await user.save();
+
+        await ResetOtp.deleteOne({ email });
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successfully.",
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
+
+export const resendResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    const otpData = await ResetOtp.findOne({ email });
+
+    if (!otpData) {
+      return res.status(404).json({
+        success: false,
+        message: "Reset session expired. Please try again.",
+      });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    otpData.otp = otp;
+    otpData.isVerified = false;
+    otpData.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await otpData.save();
+
+    sendEmail(email, "Reset Your Password", otp).catch((error) => {
+      console.error(error);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "A new OTP has been sent to your email.",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };

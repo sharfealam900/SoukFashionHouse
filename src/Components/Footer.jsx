@@ -1,5 +1,6 @@
 import React from 'react'
 import { FaFacebookF, FaInstagram, FaPinterestP, FaWhatsapp, } from "react-icons/fa";
+import { Link } from 'react-router-dom';
 
 
 export default function Footer() {
@@ -73,13 +74,21 @@ export default function Footer() {
 
                             <ul>
 
-                                <li><a href="#">About</a></li>
+                                <li>
+                                    <Link to="/about">About</Link>
+                                </li>
 
-                                <li><a href="#">Contact</a></li>
+                                <li>
+                                    <Link to="/contact">Contact</Link>
+                                </li>
 
-                                <li><a href="#">Blog</a></li>
+                                <li>
+                                    <Link to="/blog">Blog</Link>
+                                </li>
 
-                                <li><a href="#">Privacy Policy</a></li>
+                                <li>
+                                    <Link to="/privacy-policy">Privacy Policy</Link>
+                                </li>
 
                             </ul>
 

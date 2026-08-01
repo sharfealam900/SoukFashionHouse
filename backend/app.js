@@ -17,6 +17,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import couponRoutes from "./routes/coupon.route.js";
 import subscriberRoutes from "./routes/subscriber.routes.js";
 import bannerRoutes from "./routes/banner.route.js";
+import contactRoutes from "./routes/contact.routes.js";
 
 
 dotenv.config();
@@ -68,5 +69,7 @@ app.use("/api/v1/coupons", couponRoutes);
  app.use("/api/v1/subscribers", subscriberRoutes);
 
  app.use("/api/v1/banners", bannerRoutes);
+
+ app.use("/api/v1/contact", contactRoutes);
 
 export default app;

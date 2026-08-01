@@ -206,30 +206,30 @@ export default function Shop() {
 
 
                             <div className="pagination">
-                                <button
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage((prev) => prev - 1)}
-                                >
-                                    Previous
-                                </button>
+  <button
+    disabled={currentPage === 1}
+    onClick={() => setCurrentPage((prev) => prev - 1)}
+  >
+    Previous
+  </button>
 
-                                {[...Array(totalPages)].map((_, index) => (
-                                    <button
-                                        key={index}
-                                        className={currentPage === index + 1 ? "active" : ""}
-                                        onClick={() => setCurrentPage(index + 1)}
-                                    >
-                                        {index + 1}
-                                    </button>
-                                ))}
+  {[...Array(totalPages)].map((_, index) => (
+    <button
+      key={index}
+      className={currentPage === index + 1 ? "active" : ""}
+      onClick={() => setCurrentPage(index + 1)}
+    >
+      {index + 1}
+    </button>
+  ))}
 
-                                <button
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                                >
-                                    Next
-                                </button>
-                            </div>
+  <button
+    disabled={currentPage === totalPages}
+    onClick={() => setCurrentPage((prev) => prev + 1)}
+  >
+    Next
+  </button>
+</div>
 
                         </div>
 

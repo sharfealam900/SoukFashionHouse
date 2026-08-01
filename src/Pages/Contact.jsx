@@ -8,11 +8,37 @@ import {
   Send,
 } from "lucide-react";
 
+import { toast } from "react-hot-toast";
+
+
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
+import api from "../api/axios";
 
 export default function Contact() {
+
   const [activeFAQ, setActiveFAQ] = useState(null);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+
+
+
 
   const faqs = [
     {
@@ -36,6 +62,46 @@ export default function Contact() {
         "Yes, Cash on Delivery is available in most serviceable locations.",
     },
   ];
+
+
+
+
+
+  const submitHandler = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      await api.post("/contact", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        subject: form.subject,
+        message: form.message,
+      });
+
+      toast.success("Message sent successfully.");
+
+      setForm({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+      });
+
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
 
   return (
     <>
@@ -132,7 +198,10 @@ export default function Contact() {
 
             {/* Form */}
 
-            <form className="contact-form">
+            <form
+              className="contact-form"
+              onSubmit={submitHandler}
+            >
 
               <h2>Send Message</h2>
 
@@ -140,13 +209,19 @@ export default function Contact() {
 
                 <input
                   type="text"
+                  name="name"
                   placeholder="Full Name"
+                  value={form.name}
+                  onChange={handleChange}
                   required
                 />
 
                 <input
                   type="email"
+                  name="email"
                   placeholder="Email Address"
+                  value={form.email}
+                  onChange={handleChange}
                   required
                 />
 
@@ -156,26 +231,37 @@ export default function Contact() {
 
                 <input
                   type="text"
+                  name="phone"
                   placeholder="Phone Number"
+                  value={form.phone}
+                  onChange={handleChange}
                 />
 
                 <input
                   type="text"
+                  name="subject"
                   placeholder="Subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  required
                 />
 
               </div>
-
               <textarea
                 rows="7"
+                name="message"
                 placeholder="Write your message..."
+                value={form.message}
+                onChange={handleChange}
+                required
               />
 
               <button
                 type="submit"
                 className="contact-btn"
+                disabled={loading}
               >
-                Send Message
+                {loading ? "Sending..." : "Send Message"}
                 <Send size={18} />
               </button>
 
@@ -217,9 +303,8 @@ export default function Contact() {
 
                 <div
                   key={index}
-                  className={`faq-item ${
-                    activeFAQ === index ? "active" : ""
-                  }`}
+                  className={`faq-item ${activeFAQ === index ? "active" : ""
+                    }`}
                 >
 
                   <button

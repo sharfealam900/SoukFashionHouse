@@ -6,131 +6,133 @@ import Order from "../models/order.model.js";
 
 
 export const getDashboardStats = async (req, res) => {
-    try {
-        const [
-            totalUsers,
-            totalProducts,
-            totalCategories,
-            totalOrders,
-            pendingOrders,
-            deliveredOrders,
-            outOfStockProducts,
-            revenueResult,
-            recentOrders,
-        ] = await Promise.all([
-            User.countDocuments(),
-            Product.countDocuments(),
-            Category.countDocuments(),
-            Order.countDocuments(),
-            Order.countDocuments({ orderStatus: "Pending" }),
-            Order.countDocuments({ orderStatus: "Delivered" }),
-            Product.countDocuments({ stock: 0 }),
+  try {
+    const [
+      totalUsers,
+      totalProducts,
+      totalCategories,
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      outOfStockProducts,
+      revenueResult,
+      recentOrders,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Product.countDocuments(),
+      Category.countDocuments(),
+      Order.countDocuments(),
+      Order.countDocuments({ orderStatus: "Pending" }),
+      Order.countDocuments({ orderStatus: "Delivered" }),
+      Product.countDocuments({ stock: 0 }),
 
-            Order.aggregate([
-                {
-                    $match: {
-                        paymentStatus: "Paid",
-                    },
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalRevenue: {
-                            $sum: "$totalAmount",
-                        },
-                    },
-                },
-            ]),
-
-            Order.find()
-                .populate("user", "name email")
-                .sort({ createdAt: -1 })
-                .limit(5),
-        ]);
-
-        const revenue =
-            revenueResult.length > 0
-                ? revenueResult[0].totalRevenue
-                : 0;
-
-        res.json({
-            success: true,
-            stats: {
-                totalUsers,
-                totalProducts,
-                totalCategories,
-                totalOrders,
-                pendingOrders,
-                deliveredOrders,
-                outOfStockProducts,
-                revenue,
+      Order.aggregate([
+        {
+          $match: {
+            paymentStatus: "Paid",
+            orderStatus: "Delivered",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: "$totalAmount",
             },
-            recentOrders,
-        });
-    } catch (error) {
-        console.log(error);
+          },
+        },
+      ]),
 
-        res.status(500).json({
-            success: false,
-            message: "Dashboard loading failed",
-        });
-    }
+      Order.find()
+        .populate("user", "name email")
+        .sort({ createdAt: -1 })
+        .limit(5),
+    ]);
+
+    const revenue =
+      revenueResult.length > 0
+        ? revenueResult[0].totalRevenue
+        : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalProducts,
+        totalCategories,
+        totalOrders,
+        pendingOrders,
+        deliveredOrders,
+        outOfStockProducts,
+        revenue,
+      },
+      recentOrders,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Dashboard loading failed",
+    });
+  }
 };
 
 
 
 export const getRevenueAnalytics = async (req, res) => {
-    try {
+  try {
 
-        const revenue = await Order.aggregate([
+    const revenue = await Order.aggregate([
 
-            {
-                $match: {
-                    paymentStatus: "Paid"
-                }
-            },
+      {
+        $match: {
+          paymentStatus: "Paid",
+          orderStatus: "Delivered"
+        }
+      },
 
-            {
-                $group: {
-                    _id: {
-                        month: {
-                            $month: "$createdAt"
-                        }
-                    },
-
-                    revenue: {
-                        $sum: "$totalAmount"
-                    },
-
-                    orders: {
-                        $sum: 1
-                    }
-                }
-            },
-
-            {
-                $sort: {
-                    "_id.month": 1
-                }
+      {
+        $group: {
+          _id: {
+            month: {
+              $month: "$createdAt"
             }
+          },
 
-        ]);
+          revenue: {
+            $sum: "$totalAmount"
+          },
 
-        res.json({
-            success: true,
-            revenue
-        });
+          orders: {
+            $sum: 1
+          }
+        }
+      },
 
-    } catch (error) {
+      {
+        $sort: {
+          "_id.month": 1
+        }
+      }
 
-        console.log(error);
+    ]);
 
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    res.json({
+      success: true,
+      revenue
+    });
 
-    }
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
 };
 
 
@@ -165,6 +167,12 @@ export const getOrderAnalytics = async (req, res) => {
 export const getTopProducts = async (req, res) => {
   try {
     const topProducts = await Order.aggregate([
+
+      {
+        $match: {
+          orderStatus: "Delivered",
+        },
+      },
       { $unwind: "$items" },
 
       {
@@ -251,10 +259,22 @@ export const getLowStockProducts = async (req, res) => {
 
 export const getCategorySales = async (req, res) => {
   try {
+
     const sales = await Order.aggregate([
+
+      // Only count delivered orders
+      {
+        $match: {
+          orderStatus: "Delivered",
+        },
+      },
+
+      // Split order items
       {
         $unwind: "$items",
       },
+
+      // Get product details
       {
         $lookup: {
           from: "products",
@@ -263,9 +283,12 @@ export const getCategorySales = async (req, res) => {
           as: "product",
         },
       },
+
       {
         $unwind: "$product",
       },
+
+      // Get category details
       {
         $lookup: {
           from: "categories",
@@ -274,82 +297,117 @@ export const getCategorySales = async (req, res) => {
           as: "category",
         },
       },
+
       {
         $unwind: "$category",
       },
+
+      // Group by category
       {
         $group: {
-          _id: "$category.name",
+          _id: "$category._id",
+
+          categoryName: {
+            $first: "$category.name",
+          },
+
           totalSold: {
             $sum: "$items.quantity",
           },
+
+          totalRevenue: {
+            $sum: {
+              $multiply: [
+                "$items.quantity",
+                "$items.price",
+              ],
+            },
+          },
         },
       },
+
+      // Sort by highest sales
       {
         $sort: {
           totalSold: -1,
         },
       },
+
+      // Final output
+      {
+        $project: {
+          _id: 0,
+          categoryId: "$_id",
+          categoryName: 1,
+          totalSold: 1,
+          totalRevenue: 1,
+        },
+      },
+
     ]);
 
-    res.json({
+    res.status(200).json({
       success: true,
+      totalCategories: sales.length,
       sales,
     });
+
   } catch (error) {
+
+    console.log(error);
+
     res.status(500).json({
       success: false,
       message: "Failed to load category sales",
     });
+
   }
 };
 
 
-
-
 export const getNotifications = async (req, res) => {
-    try {
+  try {
 
-        const outOfStock = await Product.countDocuments({
-            stock: 0,
-        });
+    const outOfStock = await Product.countDocuments({
+      stock: 0,
+    });
 
-        const lowStock = await Product.countDocuments({
-            stock: {
-                $gt: 0,
-                $lte: 5,
-            },
-        });
+    const lowStock = await Product.countDocuments({
+      stock: {
+        $gt: 0,
+        $lte: 5,
+      },
+    });
 
-        const pendingOrders = await Order.countDocuments({
-            orderStatus: "Pending",
-        });
+    const pendingOrders = await Order.countDocuments({
+      orderStatus: "Pending",
+    });
 
-        const today = new Date();
+    const today = new Date();
 
-        today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
 
-        const newUsers = await User.countDocuments({
-            createdAt: {
-                $gte: today,
-            },
-        });
+    const newUsers = await User.countDocuments({
+      createdAt: {
+        $gte: today,
+      },
+    });
 
-        res.json({
-            success: true,
-            notifications: {
-                outOfStock,
-                lowStock,
-                pendingOrders,
-                newUsers,
-            },
-        });
+    res.json({
+      success: true,
+      notifications: {
+        outOfStock,
+        lowStock,
+        pendingOrders,
+        newUsers,
+      },
+    });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 

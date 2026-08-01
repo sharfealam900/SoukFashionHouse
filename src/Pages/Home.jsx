@@ -20,21 +20,21 @@ import BannerSlider from '../admin/components/BannerSlider'
 export default function Home() {
   return (
     <>
-    <Navbar/>
-   <BannerSlider />
-    <TopTicker/>
-    <Category/>
-    <BestSeller />
-  <NewArrival />
-  
-    <Story/>
-    <Instagram/>
-    <Testimonial/>
-    <Newsletter/>
-    <Footer/>
-    <WhatsappButton/>
-    <BackToTop/>
-  
+      <Navbar />
+      <BannerSlider />
+      <TopTicker />
+      <Category />
+      <BestSeller />
+      <NewArrival />
+
+      <Story />
+      <Instagram />
+      <Testimonial />
+      <Newsletter />
+      <Footer />
+      <WhatsappButton />
+      <BackToTop />
+
     </>
   )
 }

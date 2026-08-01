@@ -12,6 +12,7 @@ import {
   addToCart,
   getCart,
 } from "../../features/cart/cartApi";
+
 import { setCart } from "../../features/cart/cartSlice";
 
 import {
@@ -37,9 +38,26 @@ export default function ProductCard({ product }) {
     (item) => item._id === product._id
   );
 
+  // Price Calculation
+
+  const discount = Number(product.discount || 0);
+
+  const finalPrice =
+    product.price -
+    (product.price * discount) / 100;
+
+  // ==========================
+  // Add To Cart
+  // ==========================
+
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (product.stock <= 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
 
     if (!isAuthenticated) {
       toast.error("Please login first");
@@ -57,10 +75,14 @@ export default function ProductCard({ product }) {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to add product"
+        "Unable to add product"
       );
     }
   };
+
+  // ==========================
+  // Wishlist
+  // ==========================
 
   const handleWishlist = async (e) => {
     e.preventDefault();
@@ -74,30 +96,32 @@ export default function ProductCard({ product }) {
     try {
       if (isWishlisted) {
         await removeWishlistItem(product._id);
-        toast.success("Removed from wishlist");
+
+        toast.success(
+          "Removed from wishlist"
+        );
       } else {
         await addToWishlist(product._id);
-        toast.success("Added to wishlist");
+
+        toast.success(
+          "Added to wishlist"
+        );
       }
 
       const { data } = await getWishlist();
 
-      dispatch(setWishlist(data.wishlist?.products || []));
+      dispatch(
+        setWishlist(
+          data.wishlist?.products || []
+        )
+      );
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Wishlist update failed"
+        "Wishlist update failed"
       );
     }
   };
-
-  // ===== Price Calculation =====
-
-  const discount = Number(product.discount || 0);
-
-  const finalPrice =
-    product.price -
-    (product.price * discount) / 100;
 
   return (
     <Link
@@ -105,6 +129,7 @@ export default function ProductCard({ product }) {
       className="premium-product-card"
     >
       <div className="premium-image-wrapper">
+
         {product.featured && (
           <span className="premium-badge">
             Bestseller
@@ -123,12 +148,29 @@ export default function ProductCard({ product }) {
         >
           <FaHeart
             color={
-              isWishlisted ? "#E53935" : "#666"
+              isWishlisted
+                ? "#E53935"
+                : "#666"
             }
           />
         </button>
 
+        {/* OUT OF STOCK */}
+
+        {product.stock <= 0 && (
+          <div className="out-stock-overlay">
+            <span>
+              OUT OF STOCK
+            </span>
+          </div>
+        )}
+
         <img
+          className={
+            product.stock <= 0
+              ? "product-disabled-image"
+              : ""
+          }
           src={
             product.images?.length
               ? product.images[0].url
@@ -136,10 +178,13 @@ export default function ProductCard({ product }) {
           }
           alt={product.name}
         />
+
       </div>
 
       <div className="premium-content">
+
         <div className="product-rating">
+
           <FaStar />
           <FaStar />
           <FaStar />
@@ -147,6 +192,7 @@ export default function ProductCard({ product }) {
           <FaStar />
 
           <span>4.8</span>
+
         </div>
 
         <span className="product-category">
@@ -156,6 +202,7 @@ export default function ProductCard({ product }) {
         <h3>{product.name}</h3>
 
         <div className="price-box">
+
           <span className="current-price">
             ₹{finalPrice.toFixed(0)}
           </span>
@@ -165,15 +212,37 @@ export default function ProductCard({ product }) {
               ₹{product.price}
             </span>
           )}
+
+        </div>
+
+        <div className="stock-status">
+          {product.stock > 0 ? (
+            <span className="in-stock">
+              In Stock
+            </span>
+          ) : (
+            <span className="out-stock">
+              Out of Stock
+            </span>
+          )}
         </div>
 
         <button
-          className="premium-cart-btn"
+          className={`premium-cart-btn ${product.stock <= 0
+              ? "disabled-cart-btn"
+              : ""
+            }`}
+          disabled={product.stock <= 0}
           onClick={handleAddToCart}
         >
           <FaShoppingBag />
-          Add to Cart
+
+          {product.stock <= 0
+            ? "Out of Stock"
+            : "Add to Cart"}
+
         </button>
+
       </div>
     </Link>
   );

@@ -1,10 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Form, Spinner, Table } from "react-bootstrap";
 import toast from "react-hot-toast";
 import {
+  exportOrdersExcel,
   getAllOrders,
   updateOrderStatus,
 } from "../../features/order/orderApi";
+import { useReactToPrint } from "react-to-print";
+import PrintInvoice from "../components/orders/PrintInvoice";
+import PrintShippingLabel from "../components/orders/PrintShippingLabel";
+import exportOrdersPdf from "../utils/exportOrdersPdf";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -13,6 +18,68 @@ export default function AdminOrders() {
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const printRef = useRef();
+  const labelRef = useRef();
+
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [paymentFilter, setPaymentFilter] = useState("All");
+
+
+
+  const handlePrintInvoice = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Invoice",
+  });
+
+
+  const handlePrintLabel = useReactToPrint({
+    contentRef: labelRef,
+    documentTitle: "Shipping Label",
+  });
+
+
+  const downloadPdf = () => {
+    exportOrdersPdf(filteredOrders);
+  };
+
+
+  const downloadExcel = async () => {
+
+    try {
+
+      const response =
+        await exportOrdersExcel();
+
+      const url =
+        window.URL.createObjectURL(
+          new Blob([response.data])
+        );
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+
+      link.download = "Orders.xlsx";
+
+      link.click();
+
+    } catch (error) {
+
+      toast.error(
+        "Unable to export."
+      );
+
+    }
+
+  };
+
+
+
+
 
   const fetchOrders = async () => {
     try {
@@ -35,17 +102,58 @@ export default function AdminOrders() {
     fetchOrders();
   }, []);
 
+
+
+
   const filteredOrders = useMemo(() => {
     const keyword = search.toLowerCase();
 
     return orders.filter((order) => {
-      return (
+      const orderDate = new Date(order.createdAt);
+
+      const matchesSearch =
         order._id.toLowerCase().includes(keyword) ||
         order.user?.name?.toLowerCase().includes(keyword) ||
-        order.user?.email?.toLowerCase().includes(keyword)
+        order.user?.email?.toLowerCase().includes(keyword);
+
+      const matchesStatus =
+        statusFilter === "All" ||
+        order.orderStatus === statusFilter;
+
+      const matchesPayment =
+        paymentFilter === "All" ||
+        order.paymentStatus === paymentFilter;
+
+      const matchesFrom =
+        !fromDate ||
+        orderDate >= new Date(fromDate);
+
+      const matchesTo =
+        !toDate ||
+        orderDate <= new Date(`${toDate}T23:59:59`);
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPayment &&
+        matchesFrom &&
+        matchesTo
       );
     });
-  }, [orders, search]);
+
+  }, [
+    orders,
+    search,
+    statusFilter,
+    paymentFilter,
+    fromDate,
+    toDate,
+  ]);
+
+
+
+
+
 
   const handleStatusChange = async (orderId, status) => {
     try {
@@ -76,6 +184,9 @@ export default function AdminOrders() {
       case "Shipped":
         return "secondary";
 
+      case "Out for Delivery":
+        return "primary";
+
       case "Delivered":
         return "success";
 
@@ -104,16 +215,87 @@ export default function AdminOrders() {
   return (
     <div className="container-fluid py-4">
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
-        <h2 className="fw-bold">Orders</h2>
+        <h2 className="fw-bold mb-0">Orders</h2>
 
-        <Form.Control
-          style={{ maxWidth: "320px" }}
-          placeholder="Search by Order ID, Name or Email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+
+          <Form.Control
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            style={{ width: 170 }}
+          />
+
+          <Form.Control
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            style={{ width: 170 }}
+          />
+
+          <Form.Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 170 }}
+          >
+            <option value="All">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Packed">Packed</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </Form.Select>
+
+          <Form.Select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            style={{ width: 170 }}
+          >
+            <option value="All">All Payment</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Failed">Failed</option>
+          </Form.Select>
+
+          <Form.Control
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 250 }}
+          />
+
+          <button
+            className="btn btn-success"
+            onClick={downloadExcel}
+          >
+            Excel
+          </button>
+
+          <button
+            className="btn btn-danger"
+            onClick={downloadPdf}
+          >
+            PDF
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setSearch("");
+              setFromDate("");
+              setToDate("");
+              setStatusFilter("All");
+              setPaymentFilter("All");
+            }}
+          >
+            Reset
+          </button>
+
+        </div>
 
       </div>
 
@@ -251,21 +433,54 @@ export default function AdminOrders() {
                     <option value="Confirmed">Confirmed</option>
                     <option value="Packed">Packed</option>
                     <option value="Shipped">Shipped</option>
+                    <option value="Out for Delivery">
+                      Out for Delivery
+                    </option>
                     <option value="Delivered">Delivered</option>
                     <option value="Cancelled">Cancelled</option>
                   </Form.Select>
                 </td>
 
                 <td>
-                  <button
-                    className="btn btn-outline-dark btn-sm"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setShowModal(true);
-                    }}
-                  >
-                    View
-                  </button>
+                  <div className="d-flex gap-2">
+
+                    <button
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setShowModal(true);
+                      }}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      className="btn btn-outline-success btn-sm"
+                      onClick={() => {
+                        setSelectedOrder(order);
+
+                        setTimeout(() => {
+                          handlePrintInvoice();
+                        }, 100);
+                      }}
+                    >
+                      Invoice
+                    </button>
+
+                    <button
+                      className="btn btn-outline-warning btn-sm"
+                      onClick={() => {
+                        setSelectedOrder(order);
+
+                        setTimeout(() => {
+                          handlePrintLabel();
+                        }, 100);
+                      }}
+                    >
+                      Label
+                    </button>
+
+                  </div>
                 </td>
 
               </tr>
@@ -469,6 +684,40 @@ export default function AdminOrders() {
           </div>
         </div>
       )}
+
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+        }}
+      >
+        <PrintInvoice
+          ref={printRef}
+          order={selectedOrder}
+        />
+      </div>
+
+
+
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px"
+        }}
+      >
+
+        <PrintShippingLabel
+          ref={labelRef}
+          order={selectedOrder}
+        />
+
+      </div>
+
+
+
+
+
     </div>
   );
 }

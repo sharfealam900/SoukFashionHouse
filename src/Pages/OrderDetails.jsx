@@ -4,12 +4,11 @@ import { useParams } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
-import {
-  getOrderDetails,
-  cancelOrder,
-} from "../features/order/orderApi";
+import {getOrderDetails,cancelOrder,} from "../features/order/orderApi";
 
 import { toast } from "react-hot-toast";
+import OrderTracking from "../Components/OrderTracking";
+
 
 export default function OrderDetails() {
   const { orderId } = useParams();
@@ -42,7 +41,7 @@ export default function OrderDetails() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to cancel order."
+        "Unable to cancel order."
       );
     }
   };
@@ -84,22 +83,64 @@ export default function OrderDetails() {
           </p>
 
           <p>
-            <strong>Status:</strong> {order.orderStatus}
+            <strong>Status:</strong>{" "}
+
+            <span
+              className={`badge ${order.orderStatus === "Delivered"
+                  ? "bg-success"
+                  : order.orderStatus === "Cancelled"
+                    ? "bg-danger"
+                    : order.orderStatus === "Out for Delivery"
+                      ? "bg-primary"
+                      : "bg-warning text-dark"
+                }`}
+            >
+              {order.orderStatus}
+            </span>
           </p>
 
           <p>
             <strong>Payment:</strong> {order.paymentMethod}
           </p>
-
           <p>
             <strong>Payment Status:</strong>{" "}
-            {order.paymentStatus}
+
+            <span
+              className={`badge ${order.paymentStatus === "Paid"
+                  ? "bg-success"
+                  : order.paymentStatus === "Failed"
+                    ? "bg-danger"
+                    : "bg-warning text-dark"
+                }`}
+            >
+              {order.paymentStatus}
+            </span>
           </p>
 
           <p>
-            <strong>Total:</strong> ₹{order.totalAmount}
+            <strong>Subtotal:</strong> ₹{order.totalAmount}
           </p>
 
+          {order.discountAmount > 0 && (
+            <>
+              <p>
+                <strong>Coupon:</strong> {order.couponCode}
+              </p>
+
+              <p className="text-success">
+                <strong>Discount:</strong> -₹{order.discountAmount}
+              </p>
+            </>
+          )}
+
+          <p>
+            <strong>Final Amount:</strong> ₹{order.finalAmount}
+          </p>
+
+        </div>
+
+        <div className="mt-4">
+          <OrderTracking order={order} />
         </div>
 
         <div className="checkout-card mt-4">
@@ -156,7 +197,7 @@ export default function OrderDetails() {
 
         </div>
 
-        {order.orderStatus === "Pending" && (
+        {["Pending", "Confirmed"].includes(order.orderStatus) && (
           <button
             className="btn btn-danger mt-4"
             onClick={handleCancel}

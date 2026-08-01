@@ -39,6 +39,13 @@ import Subscribers from "./admin/pages/Subscribers";
 
 import Banners from "./admin/pages/Banners";
 import AddBanner from "./admin/pages/AddBanner";
+import VerifyOtp from "./Pages/VerifyOtp";
+import ForgotPassword from "./Pages/ForgotPassword";
+import VerifyResetOtp from "./Pages/VerifyResetOtp";
+import ResetPassword from "./Pages/ResetPassword";
+import ContactManagement from "./admin/pages/ContactManagement";
+import PrivacyPolicy from "./Pages/PrivacyPolicy";
+import Blog from "./Pages/Blog";
 
 function App() {
   useEffect(() => {
@@ -64,6 +71,11 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/privacy-policy"element={<PrivacyPolicy />}/>
+        <Route path="/blog"element={<Blog />}/>
+
+
 
         {/* ================= CUSTOMER ROUTES ================= */}
 
@@ -76,8 +88,11 @@ function App() {
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/profile" element={<Profile />} />
 
-          <Route path="/change-password" element={<ChangePassword />} />
-        </Route>
+          <Route path="/change-password" element={<ChangePassword />} /> </Route>
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-reset-otp" element={<VerifyResetOtp />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
 
         {/* ================= ADMIN ROUTES ================= */}
@@ -108,6 +123,8 @@ function App() {
             <Route path="/admin/banners/new" element={<AddBanner />} />
             <Route path="/admin/banners/edit/:id" element={<AddBanner />} />
 
+            <Route path="/admin/contact"element={<ContactManagement />}/>
+
 
 
           </Route>
@@ -115,8 +132,7 @@ function App() {
 
         {/* ================= 404 PAGE ================= */}
 
-        <Route path="*"
-          element={
+        <Route path="*" element={
             <div
               style={{
                 display: "flex",

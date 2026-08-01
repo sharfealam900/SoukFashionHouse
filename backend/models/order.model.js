@@ -83,11 +83,40 @@ const orderSchema = new mongoose.Schema(
         "Confirmed",
         "Packed",
         "Shipped",
+        "Out for Delivery",
         "Delivered",
         "Cancelled",
       ],
       default: "Pending",
     },
+
+
+    trackingHistory: [
+      {
+        status: {
+          type: String,
+          enum: [
+            "Pending",
+            "Confirmed",
+            "Packed",
+            "Shipped",
+            "Out for Delivery",
+            "Delivered",
+            "Cancelled",
+          ],
+        },
+
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
+    estimatedDelivery: {
+      type: Date,
+    },
+
 
     totalAmount: {
       type: Number,
@@ -96,25 +125,25 @@ const orderSchema = new mongoose.Schema(
 
 
     coupon: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Coupon",
-  default: null,
-},
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+      default: null,
+    },
 
-couponCode: {
-  type: String,
-  default: "",
-},
+    couponCode: {
+      type: String,
+      default: "",
+    },
 
-discountAmount: {
-  type: Number,
-  default: 0,
-},
+    discountAmount: {
+      type: Number,
+      default: 0,
+    },
 
-finalAmount: {
-  type: Number,
-  required: true,
-},
+    finalAmount: {
+      type: Number,
+      required: true,
+    },
 
 
 
@@ -123,5 +152,27 @@ finalAmount: {
     timestamps: true,
   }
 );
+
+orderSchema.pre("save", function () {
+  if (this.isNew) {
+    if (!this.trackingHistory) {
+      this.trackingHistory = [];
+    }
+
+    if (this.trackingHistory.length === 0) {
+      this.trackingHistory.push({
+        status: "Pending",
+      });
+    }
+
+    if (!this.estimatedDelivery) {
+      const delivery = new Date();
+      delivery.setDate(delivery.getDate() + 5);
+      this.estimatedDelivery = delivery;
+    }
+  }
+});
+
+
 
 export default mongoose.model("Order", orderSchema);

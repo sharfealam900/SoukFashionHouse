@@ -206,3 +206,23 @@
     font-weight:600;
     cursor:pointer;
 }
+
+
+
+
+
+
+/* Printout of label */
+@media print {
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body {
+    margin: 0;
+    background: white;
+  }
+
+}

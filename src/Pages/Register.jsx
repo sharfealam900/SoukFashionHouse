@@ -13,8 +13,9 @@ export default function Register() {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        password: "",
         phone: "",
+        password: "",
+        confirmPassword: "",
     });
 
     const handleChange = (e) => {
@@ -30,13 +31,26 @@ export default function Register() {
         try {
             dispatch(setLoading(true));
 
-            const { data } = await registerUser(formData);
+            if (formData.password !== formData.confirmPassword) {
+                return toast.error(
+                    "Passwords do not match."
+                );
+            }
 
-            dispatch(setUser(data.user));
+            const { confirmPassword, ...payload } = formData;
+
+            const { data } = await registerUser(payload);
 
             toast.success(data.message);
 
-            navigate("/");
+            // Save email temporarily
+            sessionStorage.setItem(
+                "verifyEmail",
+                formData.email
+            );
+
+            // Go to OTP page
+            navigate("/verify-otp");
         } catch (error) {
             toast.error(
                 error.response?.data?.message ||
@@ -112,6 +126,27 @@ export default function Register() {
                             required
                         />
                     </div>
+
+
+                    <div className="mb-4">
+                        <label className="form-label">
+                            Confirm Password
+                        </label>
+
+                        <input
+                            type="password"
+                            className="form-control"
+                            name="confirmPassword"
+                            placeholder="Confirm password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
+
+
+
 
                     <button
                         type="submit"

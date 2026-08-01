@@ -9,7 +9,7 @@ export default function Category() {
     },
     {
       id: 2,
-      name: "Suits",
+      name: "Kurti",
       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600",
     },
     {
