@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+
 
 import {
   ResponsiveContainer,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import api from "../../../api/axios";
 
 const monthNames = [
   "",
@@ -36,12 +37,7 @@ export default function RevenueChart() {
 
   const fetchRevenue = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/v1/admin/analytics/revenue",
-        {
-          withCredentials: true,
-        }
-      );
+    const res = await api.get("/admin/analytics/revenue");
 
       const formatted = res.data.revenue.map((item) => ({
         month: monthNames[item._id.month],

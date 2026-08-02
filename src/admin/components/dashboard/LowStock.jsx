@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../api/axios";
 
 export default function LowStockProducts() {
   const [products, setProducts] = useState([]);
@@ -10,12 +10,7 @@ export default function LowStockProducts() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/v1/admin/analytics/low-stock",
-        {
-          withCredentials: true,
-        }
-      );
+const res = await api.get("/admin/analytics/low-stock");
 
       setProducts(res.data.products);
     } catch (error) {

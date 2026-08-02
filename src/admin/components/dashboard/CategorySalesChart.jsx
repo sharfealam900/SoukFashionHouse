@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,6 +8,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import api from "../../../api/axios";
 
 export default function CategorySalesChart() {
   const [data, setData] = useState([]);
@@ -20,12 +19,7 @@ export default function CategorySalesChart() {
 
   const fetchSales = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/v1/admin/analytics/category-sales",
-        {
-          withCredentials: true,
-        }
-      );
+const res = await api.get("/admin/analytics/category-sales");
 
       setData(res.data.sales);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../api/axios";
 
 export default function TopProducts() {
   const [products, setProducts] = useState([]);
@@ -10,12 +10,7 @@ export default function TopProducts() {
 
   const fetchTopProducts = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/v1/admin/analytics/top-products",
-        {
-          withCredentials: true,
-        }
-      );
+      const res = await api.get("/admin/analytics/top-products");
 
       setProducts(res.data.topProducts);
     } catch (error) {

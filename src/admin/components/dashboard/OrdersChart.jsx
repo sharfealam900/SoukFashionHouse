@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+
 
 import {
   ResponsiveContainer,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import api from "../../../api/axios";
 
 const COLORS = [
   "#0088FE",
@@ -27,12 +28,7 @@ export default function OrdersChart() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/v1/admin/analytics/orders",
-        {
-          withCredentials: true,
-        }
-      );
+const res = await api.get("/admin/analytics/orders");
 
       const formatted = res.data.analytics.map((item) => ({
         name: item._id,
