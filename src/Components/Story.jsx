@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Story() {
     return (
@@ -32,9 +33,11 @@ export default function Story() {
                             and every stitch reflects timeless elegance."
                         </blockquote>
 
-                        <button className="story-btn">
-                            Read Our Story
-                        </button>
+                        <Link to="/story">
+                            <button className="story-btn">
+                                Read Our Story
+                            </button>
+                        </Link>
 
                     </div>
 

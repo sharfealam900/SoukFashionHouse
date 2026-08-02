@@ -75,13 +75,10 @@ export default function BestSeller() {
                         }}
                         onSwiper={(swiper) => {
                             setTimeout(() => {
-                                if (
-                                    swiper.params.navigation &&
-                                    typeof swiper.params.navigation !== "boolean"
-                                ) {
-                                    swiper.params.navigation.prevEl = prevRef.current;
-                                    swiper.params.navigation.nextEl = nextRef.current;
-                                }
+                                if (!swiper.navigation) return;
+
+                                swiper.params.navigation.prevEl = prevRef.current;
+                                swiper.params.navigation.nextEl = nextRef.current;
 
                                 swiper.navigation.destroy();
                                 swiper.navigation.init();

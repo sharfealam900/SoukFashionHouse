@@ -46,6 +46,7 @@ import ResetPassword from "./Pages/ResetPassword";
 import ContactManagement from "./admin/pages/ContactManagement";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import Blog from "./Pages/Blog";
+import Story from "./Pages/Story";
 
 function App() {
   useEffect(() => {
@@ -74,6 +75,7 @@ function App() {
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/privacy-policy"element={<PrivacyPolicy />}/>
         <Route path="/blog"element={<Blog />}/>
+        <Route path="/story"element={<Story />}/>
 
 
 
