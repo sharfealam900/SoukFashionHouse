@@ -5,8 +5,8 @@ import RevenueChart from "../components/dashboard/RevenueChart";
 import OrdersChart from "../components/dashboard/OrdersChart";
 import TopProducts from "../components/dashboard/TopProducts";
 import LowStockProducts from "../components/dashboard/LowStock";
-import CategorySalesChart from "../components/dashboard/CategorySalesChart";
 import NotificationsPanel from "../components/dashboard/NotificationsPanel";
+import CategorySalesChart from "../components/dashboard/CategorySalesChart";
 
 export default function Dashboard() {
     const [stats, setStats] = useState(null);
