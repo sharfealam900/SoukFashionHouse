@@ -1,27 +1,23 @@
-import axios from "axios";
-import api from "../../api/axios";
 
-const adminApi = axios.create({
-  baseURL: "http://localhost:8000/api/v1",
-  withCredentials: true,
-});
 
 /* =========================
    Dashboard
 ========================= */
 
+import api from "../../api/axios";
+
 export const getDashboardStats = () =>
-  adminApi.get("/admin/dashboard");
+  api.get("/admin/dashboard");
 
 /* =========================
    Products
 ========================= */
 
 export const getProducts = () =>
-  adminApi.get("/products");
+  api.get("/products");
 
 export const getProduct = (id) =>
-  adminApi.get(`/products/${id}`);
+  api.get(`/products/${id}`);
 
 export const createProduct = (formData) =>
   api.post("/products", formData, {
@@ -62,7 +58,53 @@ export const deleteCategory = (id) =>
   api.delete(`/categories/${id}`);
 
 /* =========================
-   Export
+   Orders
 ========================= */
 
-export default adminApi;
+export const getOrders = () =>
+  api.get("/orders/admin");
+
+export const updateOrderStatus = (id, status) =>
+  api.put(`/orders/${id}/status`, { status });
+
+/* =========================
+   Coupons
+========================= */
+
+export const getCoupons = () =>
+  api.get("/coupons");
+
+export const createCoupon = (data) =>
+  api.post("/coupons", data);
+
+export const updateCoupon = (id, data) =>
+  api.put(`/coupons/${id}`, data);
+
+export const deleteCoupon = (id) =>
+  api.delete(`/coupons/${id}`);
+
+/* =========================
+   Banner
+========================= */
+
+export const getBanners = () =>
+  api.get("/banners");
+
+export const createBanner = (formData) =>
+  api.post("/banners", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+export const updateBanner = (id, formData) =>
+  api.put(`/banners/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+export const deleteBanner = (id) =>
+  api.delete(`/banners/${id}`);
+
+export default api;
