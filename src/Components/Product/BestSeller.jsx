@@ -111,7 +111,10 @@ export default function BestSeller() {
                     >
                         {products.map((product) => (
                             <SwiperSlide key={product._id}>
-                                <ProductCard product={product} />
+                                <ProductCard
+                                    product={product}
+                                    showWishlistButton={true}
+                                />
                             </SwiperSlide>
                         ))}
                     </Swiper>

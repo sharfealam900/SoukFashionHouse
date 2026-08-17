@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 export default function CartSummary({ items }) {
   const navigate = useNavigate();
 
-  const subtotal = items.reduce((total, item) => {
+  // Remove invalid/deleted products
+  const validItems = items.filter((item) => item.product);
+
+  const subtotal = validItems.reduce((total, item) => {
     const discount = Number(item.product.discount || 0);
 
     const price =
@@ -24,7 +27,7 @@ export default function CartSummary({ items }) {
 
       <div className="summary-row">
         <span>Items</span>
-        <span>{items.length}</span>
+        <span>{validItems.length}</span>
       </div>
 
       <div className="summary-row">
@@ -34,7 +37,6 @@ export default function CartSummary({ items }) {
 
       <div className="summary-row">
         <span>Shipping</span>
-
         <span>
           {shipping === 0 ? (
             <span className="free-shipping">FREE</span>
@@ -46,8 +48,7 @@ export default function CartSummary({ items }) {
 
       {shipping > 0 && (
         <p className="shipping-note">
-          Add ₹
-          {(2999 - subtotal).toLocaleString("en-IN")} more to get
+          Add ₹{(2999 - subtotal).toLocaleString("en-IN")} more to get
           <strong> FREE Shipping</strong>.
         </p>
       )}

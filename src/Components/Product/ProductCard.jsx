@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaShoppingBag,
@@ -26,109 +26,259 @@ import { setWishlist } from "../../features/wishlist/wishlistSlice";
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
 
-  const { wishlist } = useSelector(
-    (state) => state.wishlist
-  );
+  // =====================================================
+  // AUTH
+  // =====================================================
 
   const { isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
-  const isWishlisted = wishlist.some(
-    (item) => item._id === product._id
+  // =====================================================
+  // WISHLIST
+  // =====================================================
+
+  const { wishlist } = useSelector(
+    (state) => state.wishlist
   );
 
-  // Price Calculation
+  const isWishlisted = wishlist.some(
+    (item) =>
+      item?._id?.toString() ===
+      product?._id?.toString()
+  );
 
-  const discount = Number(product.discount || 0);
+  // =====================================================
+  // PRODUCT IMAGES
+  // =====================================================
+
+  const images =
+    Array.isArray(product?.images)
+      ? product.images.filter(
+          (image) => image?.url
+        )
+      : [];
+
+  // Current slide
+  const [currentImage, setCurrentImage] =
+    useState(0);
+
+  // Is mouse currently over product?
+  const [isHovering, setIsHovering] =
+    useState(false);
+
+  // =====================================================
+  // AUTO IMAGE SLIDER
+  // =====================================================
+
+  useEffect(() => {
+    // Don't start slider if:
+    // - user isn't hovering
+    // - product has only one image
+    if (
+      !isHovering ||
+      images.length <= 1
+    ) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentImage((previous) => {
+        if (
+          previous >=
+          images.length - 1
+        ) {
+          return 0;
+        }
+
+        return previous + 1;
+      });
+    }, 1300);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [
+    isHovering,
+    images.length,
+  ]);
+
+  // =====================================================
+  // MOUSE ENTER
+  // =====================================================
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+  };
+
+  // =====================================================
+  // MOUSE LEAVE
+  // =====================================================
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+
+    /*
+      IMPORTANT:
+      We DO NOT reset currentImage to 0.
+
+      This prevents the card from suddenly
+      jumping back to the first image.
+    */
+  };
+
+  // =====================================================
+  // PRICE CALCULATION
+  // =====================================================
+
+  const discount = Number(
+    product?.discount || 0
+  );
+
+  const originalPrice = Number(
+    product?.price || 0
+  );
 
   const finalPrice =
-    product.price -
-    (product.price * discount) / 100;
+    originalPrice -
+    (originalPrice * discount) / 100;
 
-  // ==========================
-  // Add To Cart
-  // ==========================
+  // =====================================================
+  // ADD TO CART
+  // =====================================================
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (product.stock <= 0) {
-      toast.error("Product is out of stock");
+    // Product stock
+    if (
+      Number(product?.stock || 0) <= 0
+    ) {
+      toast.error(
+        "Product is out of stock"
+      );
       return;
     }
 
+    // Authentication
     if (!isAuthenticated) {
-      toast.error("Please login first");
+      toast.error(
+        "Please login first"
+      );
       return;
     }
 
     try {
       await addToCart(product._id);
 
-      const { data } = await getCart();
+      const { data } =
+        await getCart();
 
-      dispatch(setCart(data.cart));
+      dispatch(
+        setCart(data.cart)
+      );
 
-      toast.success("Product added to cart");
+      toast.success(
+        "Product added to cart"
+      );
     } catch (error) {
       toast.error(
-        error.response?.data?.message ||
-        "Unable to add product"
+        error.response?.data
+          ?.message ||
+          "Unable to add product"
       );
     }
   };
 
-  // ==========================
-  // Wishlist
-  // ==========================
+  // =====================================================
+  // WISHLIST
+  // =====================================================
 
   const handleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      toast.error("Please login first");
+      toast.error(
+        "Please login first"
+      );
       return;
     }
 
     try {
       if (isWishlisted) {
-        await removeWishlistItem(product._id);
+        await removeWishlistItem(
+          product._id
+        );
 
         toast.success(
           "Removed from wishlist"
         );
       } else {
-        await addToWishlist(product._id);
+        await addToWishlist(
+          product._id
+        );
 
         toast.success(
           "Added to wishlist"
         );
       }
 
-      const { data } = await getWishlist();
+      const { data } =
+        await getWishlist();
 
       dispatch(
         setWishlist(
-          data.wishlist?.products || []
+          data.wishlist
+            ?.products || []
         )
       );
     } catch (error) {
       toast.error(
-        error.response?.data?.message ||
-        "Wishlist update failed"
+        error.response?.data
+          ?.message ||
+          "Wishlist update failed"
       );
     }
   };
+
+  // =====================================================
+  // IMAGE SLIDER POSITION
+  // =====================================================
+
+  const sliderPosition =
+    currentImage * 100;
+
+  // =====================================================
+  // PRODUCT CARD
+  // =====================================================
 
   return (
     <Link
       to={`/products/${product._id}`}
       className="premium-product-card"
+      onMouseEnter={
+        handleMouseEnter
+      }
+      onMouseLeave={
+        handleMouseLeave
+      }
+      style={{
+        textDecoration: "none",
+        color: "inherit",
+      }}
     >
+
+      {/* =================================================
+          IMAGE SECTION
+      ================================================= */}
+
       <div className="premium-image-wrapper">
+
+        {/* ===============================
+            BESTSELLER
+        =============================== */}
 
         {product.featured && (
           <span className="premium-badge">
@@ -136,15 +286,31 @@ export default function ProductCard({ product }) {
           </span>
         )}
 
+        {/* ===============================
+            DISCOUNT
+        =============================== */}
+
         {discount > 0 && (
           <span className="discount-badge">
             {discount}% OFF
           </span>
         )}
 
+        {/* ===============================
+            WISHLIST BUTTON
+        =============================== */}
+
         <button
+          type="button"
           className="premium-wishlist"
-          onClick={handleWishlist}
+          onClick={
+            handleWishlist
+          }
+          aria-label={
+            isWishlisted
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }
         >
           <FaHeart
             color={
@@ -155,9 +321,69 @@ export default function ProductCard({ product }) {
           />
         </button>
 
-        {/* OUT OF STOCK */}
+        {/* ===============================
+            IMAGE SLIDER VIEWPORT
+        =============================== */}
 
-        {product.stock <= 0 && (
+        <div className="product-slider-viewport">
+
+          {/* =============================
+              IMAGE SLIDER TRACK
+          ============================= */}
+
+          {images.length > 0 ? (
+            <div
+              className="product-slider-track"
+              style={{
+                transform: `translateX(-${sliderPosition}%)`,
+              }}
+            >
+
+              {images.map(
+                (image, index) => (
+                  <div
+                    className="product-slide"
+                    key={
+                      image._id ||
+                      image.public_id ||
+                      image.url ||
+                      index
+                    }
+                  >
+                    <img
+                      src={image.url}
+                      alt={`${product.name} ${
+                        index + 1
+                      }`}
+                      className={
+                        product.stock <= 0
+                          ? "product-disabled-image"
+                          : ""
+                      }
+                    />
+                  </div>
+                )
+              )}
+
+            </div>
+          ) : (
+            <div className="product-slide">
+              <img
+                src="https://via.placeholder.com/700x900"
+                alt={product.name}
+              />
+            </div>
+          )}
+
+        </div>
+
+        {/* ===============================
+            OUT OF STOCK
+        =============================== */}
+
+        {Number(
+          product?.stock || 0
+        ) <= 0 && (
           <div className="out-stock-overlay">
             <span>
               OUT OF STOCK
@@ -165,23 +391,40 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        <img
-          className={
-            product.stock <= 0
-              ? "product-disabled-image"
-              : ""
-          }
-          src={
-            product.images?.length
-              ? product.images[0].url
-              : "https://via.placeholder.com/700x900"
-          }
-          alt={product.name}
-        />
+        {/* ===============================
+            IMAGE DOTS
+        =============================== */}
+
+        {images.length > 1 && (
+          <div className="product-image-dots">
+
+            {images.map(
+              (_, index) => (
+                <span
+                  key={index}
+                  className={
+                    currentImage === index
+                      ? "image-dot active"
+                      : "image-dot"
+                  }
+                />
+              )
+            )}
+
+          </div>
+        )}
 
       </div>
 
+      {/* =================================================
+          PRODUCT CONTENT
+      ================================================= */}
+
       <div className="premium-content">
+
+        {/* ===============================
+            RATING
+        =============================== */}
 
         <div className="product-rating">
 
@@ -191,32 +434,62 @@ export default function ProductCard({ product }) {
           <FaStar />
           <FaStar />
 
-          <span>4.8</span>
+          <span>
+            {product.averageRating
+              ? Number(
+                  product.averageRating
+                ).toFixed(1)
+              : "4.8"}
+          </span>
 
         </div>
 
+        {/* ===============================
+            CATEGORY
+        =============================== */}
+
         <span className="product-category">
-          {product.category?.name}
+          {product.category?.name ||
+            ""}
         </span>
 
-        <h3>{product.name}</h3>
+        {/* ===============================
+            PRODUCT NAME
+        =============================== */}
+
+        <h3>
+          {product.name}
+        </h3>
+
+        {/* ===============================
+            PRICE
+        =============================== */}
 
         <div className="price-box">
 
           <span className="current-price">
-            ₹{finalPrice.toFixed(0)}
+            ₹
+            {finalPrice.toFixed(0)}
           </span>
 
           {discount > 0 && (
             <span className="previous-price">
-              ₹{product.price}
+              ₹
+              {originalPrice.toFixed(0)}
             </span>
           )}
 
         </div>
 
+        {/* ===============================
+            STOCK STATUS
+        =============================== */}
+
         <div className="stock-status">
-          {product.stock > 0 ? (
+
+          {Number(
+            product?.stock || 0
+          ) > 0 ? (
             <span className="in-stock">
               In Stock
             </span>
@@ -225,25 +498,44 @@ export default function ProductCard({ product }) {
               Out of Stock
             </span>
           )}
+
         </div>
 
+        {/* ===============================
+            ADD TO CART
+        =============================== */}
+
         <button
-          className={`premium-cart-btn ${product.stock <= 0
+          type="button"
+          className={`premium-cart-btn ${
+            Number(
+              product?.stock || 0
+            ) <= 0
               ? "disabled-cart-btn"
               : ""
-            }`}
-          disabled={product.stock <= 0}
-          onClick={handleAddToCart}
+          }`}
+          disabled={
+            Number(
+              product?.stock || 0
+            ) <= 0
+          }
+          onClick={
+            handleAddToCart
+          }
         >
+
           <FaShoppingBag />
 
-          {product.stock <= 0
+          {Number(
+            product?.stock || 0
+          ) <= 0
             ? "Out of Stock"
             : "Add to Cart"}
 
         </button>
 
       </div>
+
     </Link>
   );
 }

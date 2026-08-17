@@ -17,7 +17,11 @@ const cartSlice = createSlice({
 
         setCart(state, action) {
             state.cart = action.payload;
-            state.items = action.payload?.items || [];
+
+            // Remove deleted products
+            state.items = (action.payload?.items || []).filter(
+                (item) => item.product
+            );
 
             state.totalItems = state.items.reduce(
                 (total, item) => total + item.quantity,
@@ -26,10 +30,18 @@ const cartSlice = createSlice({
         },
 
         updateItemQuantity(state, action) {
-            const { productId, quantity } = action.payload;
+            const {
+                productId,
+                size,
+                color,
+                quantity,
+            } = action.payload;
 
             const item = state.items.find(
-                (item) => item.product._id === productId
+                (item) =>
+                    item.product?._id === productId &&
+                    Number(item.size) === Number(size) &&
+                    (item.color || "") === (color || "")
             );
 
             if (item) {
@@ -43,8 +55,19 @@ const cartSlice = createSlice({
         },
 
         removeItem(state, action) {
+            const {
+                productId,
+                size,
+                color,
+            } = action.payload;
+
             state.items = state.items.filter(
-                (item) => item.product._id !== action.payload
+                (item) =>
+                    !(
+                        item.product?._id === productId &&
+                        Number(item.size) === Number(size) &&
+                        (item.color || "") === (color || "")
+                    )
             );
 
             state.totalItems = state.items.reduce(

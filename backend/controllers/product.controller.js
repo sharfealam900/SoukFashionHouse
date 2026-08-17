@@ -3,6 +3,59 @@ import Category from "../models/category.model.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import slugify from "slugify";
 import cloudinary from "../config/cloudinary.js";
+import Cart from "../models/cart.model.js";
+
+
+
+const parseProductSizes = (sizes) => {
+  if (!sizes) {
+    return [];
+  }
+
+  let parsed;
+
+  // Normal JSON string from FormData
+  if (typeof sizes === "string") {
+    parsed = JSON.parse(sizes);
+  }
+
+  // Multer/body parser can sometimes give an array
+  else if (Array.isArray(sizes)) {
+    parsed = sizes;
+  }
+
+  else {
+    return [];
+  }
+
+  // Handle old/corrupted format:
+  // ["[{\"size\":6,\"stock\":5}]"]
+  if (
+    Array.isArray(parsed) &&
+    parsed.length === 1 &&
+    typeof parsed[0] === "string"
+  ) {
+    parsed = JSON.parse(parsed[0]);
+  }
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((item) => ({
+      size: Number(item.size),
+      stock: Number(item.stock || 0),
+    }))
+    .filter(
+      (item) =>
+        Number.isFinite(item.size) &&
+        Number.isFinite(item.stock) &&
+        item.size > 0 &&
+        item.stock >= 0
+    );
+};
+
 
 export const createProduct = async (req, res) => {
   try {
@@ -19,7 +72,64 @@ export const createProduct = async (req, res) => {
       colors,
     } = req.body;
 
-    // Check category exists
+    // ==========================================
+    // PARSE PRODUCT SIZES
+    // ==========================================
+
+    let parsedSizes = [];
+
+    if (sizes) {
+      parsedSizes = sizes;
+
+      // FormData sends sizes as a string
+      if (typeof parsedSizes === "string") {
+        parsedSizes = JSON.parse(parsedSizes);
+      }
+
+      // Handle accidentally double-stringified sizes
+      if (
+        Array.isArray(parsedSizes) &&
+        parsedSizes.length === 1 &&
+        typeof parsedSizes[0] === "string"
+      ) {
+        parsedSizes = JSON.parse(parsedSizes[0]);
+      }
+    }
+
+    // Make sure sizes is actually an array
+    if (!Array.isArray(parsedSizes)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product sizes format",
+      });
+    }
+
+    // Clean and normalize sizes
+    parsedSizes = parsedSizes
+      .map((item) => ({
+        size: Number(item.size),
+        stock: Number(item.stock || 0),
+      }))
+      .filter(
+        (item) =>
+          !Number.isNaN(item.size) &&
+          item.size > 0 &&
+          !Number.isNaN(item.stock) &&
+          item.stock >= 0
+      );
+
+    console.log("==================================");
+    console.log("RAW SIZES:", sizes);
+    console.log("FINAL SIZES:", parsedSizes);
+    console.log("IS ARRAY:", Array.isArray(parsedSizes));
+    console.log("FIRST ITEM:", parsedSizes[0]);
+    console.log("FIRST ITEM TYPE:", typeof parsedSizes[0]);
+    console.log("==================================");
+
+    // ==========================================
+    // CHECK CATEGORY
+    // ==========================================
+
     const categoryExists = await Category.findById(category);
 
     if (!categoryExists) {
@@ -29,7 +139,10 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // 👇 ADD THIS CODE HERE
+    // ==========================================
+    // UPLOAD IMAGES
+    // ==========================================
+
     let uploadedImages = [];
 
     if (req.files && req.files.length > 0) {
@@ -43,6 +156,9 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    // ==========================================
+    // GENERATE SLUG
+    // ==========================================
 
     let slug = slugify(name, {
       lower: true,
@@ -55,9 +171,15 @@ export const createProduct = async (req, res) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-
+    // ==========================================
+    // GENERATE SKU
+    // ==========================================
 
     const sku = `SOUK-${Date.now()}`;
+
+    // ==========================================
+    // CREATE PRODUCT
+    // ==========================================
 
     const product = await Product.create({
       name,
@@ -70,24 +192,34 @@ export const createProduct = async (req, res) => {
       discount,
       stock,
       sku,
-      sizes,
+      sizes: parsedSizes,
       colors,
-      images: uploadedImages, // 👈 Add this too
+      images: uploadedImages,
     });
 
-    res.status(201).json({
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.status(201).json({
       success: true,
       message: "Product created successfully",
       product,
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error("CREATE PRODUCT ERROR:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
+
+
+
 
 
 export const getProducts = async (req, res) => {
@@ -96,18 +228,27 @@ export const getProducts = async (req, res) => {
       .populate("category", "name slug")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: products.length,
       products,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("GET PRODUCTS ERROR:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
+
+
+
+
+
+
 
 
 export const getProduct = async (req, res) => {
@@ -156,6 +297,35 @@ export const updateProduct = async (req, res) => {
 
     // Find Product
     const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    let parsedSizes = product.sizes;
+
+    if (sizes) {
+      parsedSizes = sizes;
+
+      if (typeof parsedSizes === "string") {
+        parsedSizes = JSON.parse(parsedSizes);
+      }
+
+      if (
+        Array.isArray(parsedSizes) &&
+        parsedSizes.length === 1 &&
+        typeof parsedSizes[0] === "string"
+      ) {
+        parsedSizes = JSON.parse(parsedSizes[0]);
+      }
+    }
+
+    product.sizes = parsedSizes;
+
+
 
     if (!product) {
       return res.status(404).json({
@@ -222,7 +392,7 @@ export const updateProduct = async (req, res) => {
     product.price = price ?? product.price;
     product.discount = discount ?? product.discount;
     product.stock = stock ?? product.stock;
-    product.sizes = sizes ?? product.sizes;
+    product.sizes = parsedSizes;
     product.colors = colors ?? product.colors;
 
     if (featured !== undefined) {
@@ -254,6 +424,7 @@ export const updateProduct = async (req, res) => {
 
 
 export const deleteProduct = async (req, res) => {
+  console.log("DELETE PRODUCT CONTROLLER HIT");
   try {
     const product = await Product.findById(req.params.id);
 
@@ -264,9 +435,25 @@ export const deleteProduct = async (req, res) => {
       });
     }
 
+    // Delete Cloudinary images
     for (const image of product.images) {
       await cloudinary.uploader.destroy(image.public_id);
     }
+
+    console.log("Deleting Product ID:", product._id);
+
+    const result = await Cart.updateMany(
+      {},
+      {
+        $pull: {
+          items: {
+            product: product._id,
+          },
+        },
+      }
+    );
+
+    console.log("Cart Update Result:", result);
 
     await product.deleteOne();
 
@@ -276,12 +463,15 @@ export const deleteProduct = async (req, res) => {
     });
 
   } catch (error) {
+    console.log(error);
+
     res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
 
 export const getRelatedProducts = async (req, res) => {
   try {

@@ -87,6 +87,18 @@ export default function OrderSummary({
 
                 <p>Qty: {item.quantity}</p>
 
+                {item.size && (
+                  <p className="mb-1">
+                    <strong>Size:</strong> {item.size}
+                  </p>
+                )}
+
+                {item.color && (
+                  <p className="mb-1">
+                    <strong>Color:</strong> {item.color}
+                  </p>
+                )}
+
                 {discount > 0 && (
                   <small className="text-decoration-line-through text-muted">
                     ₹{item.product.price.toLocaleString("en-IN")}

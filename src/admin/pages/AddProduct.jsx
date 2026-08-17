@@ -11,6 +11,13 @@ export default function AddProduct() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    const [sizes, setSizes] = useState([
+        {
+            size: "",
+            stock: 0,
+        },
+    ]);
+
     const { id } = useParams();
     const isEdit = Boolean(id);
 
@@ -45,17 +52,66 @@ export default function AddProduct() {
 
             const product = data.product;
 
-            setValue("name", product.name);
-            setValue("description", product.description);
-            setValue("price", product.price);
-            setValue("discount", product.discount);
-            setValue("stock", product.stock);
-            setValue("brand", product.brand);
-            setValue("gender", product.gender);
-            setValue("category", product.category?._id);
+            setValue("name", product.name || "");
+            setValue("description", product.description || "");
+            setValue("price", product.price || 0);
+            setValue("discount", product.discount || 0);
+            setValue("stock", product.stock || 0);
+            setValue("brand", product.brand || "");
+            setValue("gender", product.gender || "");
+            setValue("category", product.category?._id || "");
+
             setExistingImages(product.images || []);
+
+
+
+            let productSizes = product.sizes || [];
+
+            console.log("ADMIN RAW SIZES:", productSizes);
+
+            if (
+                Array.isArray(productSizes) &&
+                productSizes.length === 1 &&
+                typeof productSizes[0] === "string"
+            ) {
+                try {
+                    productSizes = JSON.parse(productSizes[0]);
+                } catch (error) {
+                    console.error("Failed to parse sizes:", error);
+                    productSizes = [];
+                }
+            }
+
+
+            productSizes = productSizes
+                .map((item) => {
+                    if (typeof item === "string") {
+                        try {
+                            return JSON.parse(item);
+                        } catch (error) {
+                            console.error("Invalid size item:", item);
+                            return null;
+                        }
+                    }
+
+                    return item;
+                })
+                .filter(Boolean);
+
+
+            productSizes = productSizes
+                .map((item) => ({
+                    size: Number(item.size),
+                    stock: Number(item.stock || 0),
+                }))
+                .filter((item) => !Number.isNaN(item.size));
+
+            console.log("ADMIN NORMALIZED SIZES:", productSizes);
+
+            setSizes(productSizes);
+
         } catch (error) {
-            console.error(error);
+            console.error("Failed to load product:", error);
             alert("Failed to load product.");
         }
     };
@@ -95,6 +151,42 @@ export default function AddProduct() {
         setPreview(files.map((file) => URL.createObjectURL(file)));
     };
 
+
+    const handleSizeChange = (index, field, value) => {
+        setSizes((prev) =>
+            prev.map((item, i) =>
+                i === index
+                    ? {
+                        ...item,
+                        [field]: Number(value),
+                    }
+                    : item
+            )
+        );
+    };
+
+    const addSizeRow = () => {
+        setSizes([
+            ...sizes,
+            {
+                size: "",
+                stock: 0,
+            },
+        ]);
+    };
+
+    const removeSizeRow = (index) => {
+        const updated = [...sizes];
+
+        updated.splice(index, 1);
+
+        setSizes(updated);
+    };
+
+
+
+
+
     const onSubmit = async (data) => {
         try {
             setLoading(true);
@@ -109,6 +201,7 @@ export default function AddProduct() {
             formData.append("brand", data.brand);
             formData.append("gender", data.gender);
             formData.append("category", data.category);
+            formData.append("sizes", JSON.stringify(sizes));
 
             for (let image of data.images) {
                 formData.append("images", image);
@@ -249,6 +342,77 @@ export default function AddProduct() {
                                     {...register("stock")}
                                 />
                             </div>
+
+
+
+                            <div className="col-12 mb-4">
+                                {/* Headings */}
+                                <div className="row mb-2">
+                                    <div className="col-md-5">
+                                        <label className="form-label fw-bold">
+                                            Product Size
+                                        </label>
+                                    </div>
+
+                                    <div className="col-md-4">
+                                        <label className="form-label fw-bold">
+                                            Product Stock
+                                        </label>
+                                    </div>
+
+                                    <div className="col-md-2"></div>
+                                </div>
+
+                                {/* Rows */}
+                                {sizes.map((item, index) => (
+                                    <div className="row mb-3 align-items-center" key={index}>
+                                        <div className="col-md-5">
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                placeholder="Size"
+                                                value={item.size}
+                                                onChange={(e) =>
+                                                    handleSizeChange(index, "size", e.target.value)
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="col-md-4">
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                placeholder="Stock"
+                                                value={item.stock}
+                                                onChange={(e) =>
+                                                    handleSizeChange(index, "stock", e.target.value)
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                            <button
+                                                type="button"
+                                                className="btn btn-danger w-100"
+                                                onClick={() => removeSizeRow(index)}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    className="btn btn-success mt-2"
+                                    onClick={addSizeRow}
+                                >
+                                    + Add Size
+                                </button>
+                            </div>
+
+
+
 
                             {/* Description */}
                             <div className="col-12 mb-3">

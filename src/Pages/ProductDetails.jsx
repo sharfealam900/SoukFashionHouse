@@ -37,7 +37,17 @@ const ProductDetails = () => {
     const [selectedImage, setSelectedImage] = useState(0);
 
     const [quantity, setQuantity] = useState(1);
+    const [selectedSize, setSelectedSize] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
+
+    const availableStock = selectedSize
+        ? Number(
+            product?.sizes?.find(
+                (item) =>
+                    Number(item.size) === Number(selectedSize)
+            )?.stock || 0
+        )
+        : Number(product?.stock || 0);
 
     const [reviewRefresh, setReviewRefresh] = useState(false);
 
@@ -54,6 +64,8 @@ const ProductDetails = () => {
 
     }, [id]);
 
+
+
     const fetchProduct = async () => {
         try {
             setLoading(true);
@@ -61,13 +73,46 @@ const ProductDetails = () => {
             const { data } = await getProduct(id);
 
 
-            setProduct(data.product);
+            const productData = data.product;
+
+            let productSizes = productData.sizes || [];
+
+            if (
+                Array.isArray(productSizes) &&
+                productSizes.length === 1 &&
+                typeof productSizes[0] === "string"
+            ) {
+                try {
+                    productSizes = JSON.parse(productSizes[0]);
+                } catch (error) {
+                    console.error("Invalid sizes:", error);
+                    productSizes = [];
+                }
+            }
+
+            productData.sizes = Array.isArray(productSizes)
+                ? productSizes.map((item) => ({
+                    size: Number(item.size),
+                    stock: Number(item.stock || 0),
+                }))
+                : [];
+
+            setProduct(productData);
+           console.log("========== PRODUCT SIZE DEBUG ==========");
+console.log("PRODUCT ID:", id);
+console.log("RAW PRODUCT:", data.product);
+console.log("RAW SIZES:", data.product?.sizes);
+console.log("RAW SIZES LENGTH:", data.product?.sizes?.length);
+console.log("NORMALIZED SIZES:", productData.sizes);
+console.log("NORMALIZED LENGTH:", productData.sizes?.length);
+console.log("========================================");
             fetchRelatedProducts(
                 data.product.category._id,
                 data.product._id
             );
             setSelectedImage(0);
             setQuantity(1);
+            setSelectedSize(null);
 
         } catch (error) {
             console.log(error);
@@ -76,6 +121,8 @@ const ProductDetails = () => {
             setLoading(false);
         }
     };
+
+
     const fetchRelatedProducts = async (categoryId, productId) => {
         try {
             const { data } = await getRelatedProducts(categoryId, productId);
@@ -105,16 +152,21 @@ const ProductDetails = () => {
         }
     };
 
+
     const isWishlisted =
         wishlist?.some(
             (item) => item._id === product?._id
         ) || false;
 
+
+
     const increaseQty = () => {
-        if (quantity < product.stock) {
+        if (quantity < availableStock) {
             setQuantity((prev) => prev + 1);
         }
     };
+
+
 
     const decreaseQty = () => {
         if (quantity > 1) {
@@ -122,15 +174,57 @@ const ProductDetails = () => {
         }
     };
 
+
+
     const handleAddToCart = async () => {
         try {
-            await addToCart(product._id, quantity);
+
+            // Product has sizes → size is mandatory
+            if (
+                product?.sizes?.length > 0 &&
+                selectedSize === null
+            ) {
+                toast.error("Please select a size");
+                return;
+            }
+
+            const selectedSizeData = product?.sizes?.find(
+                (item) =>
+                    Number(item.size) === Number(selectedSize)
+            );
+
+            // Selected size out of stock
+            if (
+                selectedSizeData &&
+                Number(selectedSizeData.stock) <= 0
+            ) {
+                toast.error("Selected size is out of stock");
+                return;
+            }
+
+            // Quantity greater than selected-size stock
+            if (
+                selectedSizeData &&
+                quantity > Number(selectedSizeData.stock)
+            ) {
+                toast.error(
+                    `Only ${selectedSizeData.stock} item(s) available in this size`
+                );
+                return;
+            }
+
+            await addToCart(
+                product._id,
+                quantity,
+                selectedSize
+            );
 
             const { data } = await getCart();
 
             dispatch(setCart(data.cart));
 
             toast.success("Product added to cart");
+
         } catch (error) {
 
             if (error.response?.status === 401) {
@@ -144,6 +238,9 @@ const ProductDetails = () => {
             );
         }
     };
+
+
+
 
     const handleWishlist = async () => {
         try {
@@ -181,6 +278,10 @@ const ProductDetails = () => {
             );
         }
     };
+
+
+
+
 
     if (loading) {
         return (
@@ -394,31 +495,71 @@ const ProductDetails = () => {
 
                         )}
 
-                        {product.sizes?.length > 0 && (
 
-                            <>
+
+
+                        {product?.sizes?.length > 0 && (
+                            <div className="size-section">
 
                                 <h4 className="section-title">
-                                    Available Sizes
+                                    Select Size
                                 </h4>
 
-                                <div className="size-list">
+                                <div className="size-options">
 
-                                    {product.sizes.map((size, index) => (
+                                    {product.sizes.map((item, index) => {
 
-                                        <span
-                                            key={index}
-                                            className="size-item"
-                                        >
-                                            {size}
-                                        </span>
+                                        const size = Number(item.size);
+                                        const stock = Number(item.stock || 0);
 
-                                    ))}
+                                        const isOutOfStock = stock <= 0;
+
+                                        const isSelected =
+                                            Number(selectedSize) === size;
+
+                                        return (
+                                            <button
+                                                key={`${size}-${index}`}
+                                                type="button"
+                                                className={`size-option ${isSelected ? "selected" : ""
+                                                    } ${isOutOfStock
+                                                        ? "out-of-stock"
+                                                        : ""
+                                                    }`}
+                                                disabled={isOutOfStock}
+                                                onClick={() => {
+
+                                                    if (isOutOfStock) return;
+
+                                                    setSelectedSize(size);
+
+                                                    // If current quantity is greater
+                                                    // than new size stock, reduce it.
+                                                    setQuantity((currentQuantity) =>
+                                                        currentQuantity > stock
+                                                            ? stock
+                                                            : currentQuantity
+                                                    );
+                                                }}
+                                            >
+
+                                                <span className="size-number">
+                                                    {size}
+                                                </span>
+
+                                                <span className="size-stock">
+                                                    {isOutOfStock
+                                                        ? "Out of Stock"
+                                                        : `${stock} left`}
+                                                </span>
+
+                                            </button>
+                                        );
+                                    })}
 
                                 </div>
 
-                            </>
-
+                            </div>
                         )}
 
                         <div className="quantity-box">

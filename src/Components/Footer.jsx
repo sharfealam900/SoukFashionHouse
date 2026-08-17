@@ -105,15 +105,11 @@ export default function Footer() {
                             </p>
 
                             <p>
-                                📞 +91 98765 43210
+                                📞 +91 9871586648
                             </p>
 
                             <p>
                                 ✉ support@soukfashion.com
-                            </p>
-
-                            <p>
-                                Mon – Sat : 10:00 AM – 7:00 PM
                             </p>
 
                         </div>

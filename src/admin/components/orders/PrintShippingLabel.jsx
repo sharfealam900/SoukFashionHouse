@@ -4,6 +4,8 @@ import Barcode from "react-barcode";
 const PrintShippingLabel = forwardRef(({ order }, ref) => {
     if (!order) return null;
 
+    const orderId = order?._id?.slice(-8).toUpperCase();
+
     return (
         <div
             ref={ref}
@@ -11,88 +13,182 @@ const PrintShippingLabel = forwardRef(({ order }, ref) => {
                 width: "100mm",
                 minHeight: "150mm",
                 background: "#fff",
-                color: "#000",
-                fontFamily: "Arial, sans-serif",
-                border: "2px solid #000",
+                color: "#111",
+                fontFamily:
+                    "Arial, Helvetica, sans-serif",
                 boxSizing: "border-box",
-                padding: "12px",
+                border: "1.5px solid #111",
+                padding: "7mm",
                 margin: "0 auto",
+                lineHeight: "1.25",
             }}
         >
-            {/* Header */}
+            {/* ================= HEADER ================= */}
             <div
                 style={{
-                    textAlign: "center",
-                    borderBottom: "2px solid #000",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
                     paddingBottom: "10px",
-                    marginBottom: "10px",
+                    borderBottom: "2px solid #111",
                 }}
             >
-                <h2
-                    style={{
-                        margin: 0,
-                        fontSize: "20px",
-                        fontWeight: "700",
-                    }}
-                >
-                    SOUK Fashion House
-                </h2>
+                <div>
+                    <div
+                        style={{
+                            fontSize: "19px",
+                            fontWeight: "800",
+                            letterSpacing: "0.3px",
+                        }}
+                    >
+                        SOUK
+                    </div>
+
+                    <div
+                        style={{
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            letterSpacing: "0.8px",
+                            marginTop: "1px",
+                        }}
+                    >
+                        FASHION HOUSE
+                    </div>
+                </div>
 
                 <div
                     style={{
-                        fontSize: "12px",
-                        color: "#555",
-                        marginTop: "5px",
+                        textAlign: "right",
                     }}
                 >
-                    Shipping Label
+                    <div
+                        style={{
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            letterSpacing: "0.5px",
+                        }}
+                    >
+                        SHIPPING LABEL
+                    </div>
+
+                    <div
+                        style={{
+                            fontSize: "9px",
+                            color: "#666",
+                            marginTop: "3px",
+                        }}
+                    >
+                        E-COMMERCE ORDER
+                    </div>
                 </div>
             </div>
 
-            {/* Order Info */}
-            <table
-                style={{
-                    width: "100%",
-                    fontSize: "13px",
-                    marginBottom: "10px",
-                }}
-            >
-                <tbody>
-                    <tr>
-                        <td>
-                            <strong>Order ID</strong>
-                        </td>
-
-                        <td style={{ textAlign: "right" }}>
-                            #{order._id.slice(-8).toUpperCase()}
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <strong>Date</strong>
-                        </td>
-
-                        <td style={{ textAlign: "right" }}>
-                            {new Date(order.createdAt).toLocaleDateString("en-IN")}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <hr />
-
-            {/* Customer */}
+            {/* ================= ORDER / AWB ================= */}
             <div
                 style={{
-                    marginBottom: "12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                    padding: "9px 0",
+                    borderBottom: "1px solid #ccc",
+                }}
+            >
+                <div>
+                    <div
+                        style={{
+                            fontSize: "9px",
+                            color: "#666",
+                            fontWeight: "700",
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        Order ID
+                    </div>
+
+                    <div
+                        style={{
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            marginTop: "2px",
+                        }}
+                    >
+                        #{orderId}
+                    </div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                    <div
+                        style={{
+                            fontSize: "9px",
+                            color: "#666",
+                            fontWeight: "700",
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        Order Date
+                    </div>
+
+                    <div
+                        style={{
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            marginTop: "2px",
+                        }}
+                    >
+                        {new Date(order.createdAt).toLocaleDateString(
+                            "en-IN"
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ================= PAYMENT BADGE ================= */}
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "8px 0",
+                    borderBottom: "1px solid #ccc",
                 }}
             >
                 <div
                     style={{
+                        fontSize: "9px",
+                        color: "#666",
                         fontWeight: "700",
-                        marginBottom: "6px",
-                        fontSize: "15px",
+                    }}
+                >
+                    PAYMENT METHOD
+                </div>
+
+                <div
+                    style={{
+                        display: "inline-block",
+                        border: "1px solid #111",
+                        padding: "4px 9px",
+                        fontSize: "10px",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                    }}
+                >
+                    {order.paymentMethod}
+                </div>
+            </div>
+
+            {/* ================= SHIP TO ================= */}
+            <div
+                style={{
+                    padding: "10px 0",
+                    borderBottom: "1px solid #ccc",
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: "10px",
+                        fontWeight: "800",
+                        letterSpacing: "0.7px",
+                        marginBottom: "7px",
                     }}
                 >
                     SHIP TO
@@ -100,146 +196,224 @@ const PrintShippingLabel = forwardRef(({ order }, ref) => {
 
                 <div
                     style={{
-                        fontWeight: "600",
-                        fontSize: "15px",
+                        fontSize: "16px",
+                        fontWeight: "800",
+                        marginBottom: "4px",
                     }}
                 >
                     {order.shippingAddress.fullName}
                 </div>
 
-                <div>{order.shippingAddress.phone}</div>
-
-                <div>{order.shippingAddress.email}</div>
+                <div
+                    style={{
+                        fontSize: "11px",
+                        marginBottom: "2px",
+                    }}
+                >
+                    📞 {order.shippingAddress.phone}
+                </div>
 
                 <div
                     style={{
+                        fontSize: "11px",
+                        marginBottom: "5px",
+                    }}
+                >
+                    ✉ {order.shippingAddress.email}
+                </div>
+
+                <div
+                    style={{
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        lineHeight: "1.45",
                         whiteSpace: "pre-wrap",
-                        marginTop: "5px",
                     }}
                 >
                     {order.shippingAddress.address}
                 </div>
             </div>
 
-            <hr />
-
-            {/* Products */}
-
+            {/* ================= ITEMS ================= */}
             <div
                 style={{
-                    marginBottom: "12px",
+                    padding: "10px 0",
+                    borderBottom: "1px solid #ccc",
                 }}
             >
                 <div
                     style={{
-                        fontWeight: "700",
-                        marginBottom: "6px",
-                        fontSize: "15px",
+                        fontSize: "10px",
+                        fontWeight: "800",
+                        letterSpacing: "0.7px",
+                        marginBottom: "7px",
                     }}
                 >
-                    ITEMS
+                    ORDER ITEMS
                 </div>
 
-                {order.items.map((item) => (
+                {order.items.map((item, index) => (
                     <div
-                        key={item.product._id}
+                        key={item.product?._id || index}
                         style={{
                             display: "flex",
                             justifyContent: "space-between",
-                            marginBottom: "4px",
-                            fontSize: "14px",
+                            alignItems: "flex-start",
+                            gap: "10px",
+                            marginBottom:
+                                index !== order.items.length - 1
+                                    ? "7px"
+                                    : "0",
                         }}
                     >
-                        <span>{item.product.name}</span>
+                        <div
+                            style={{
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                flex: 1,
+                            }}
+                        >
+                            {item.product?.name}
 
-                        <strong>x {item.quantity}</strong>
+                            {/* Size if available */}
+                            {item.size && (
+                                <div
+                                    style={{
+                                        fontSize: "9px",
+                                        color: "#666",
+                                        marginTop: "2px",
+                                    }}
+                                >
+                                    Size: {item.size}
+                                </div>
+                            )}
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: "11px",
+                                fontWeight: "800",
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            × {item.quantity}
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <hr />
-
-            {/* Payment */}
-
-            <table
-                style={{
-                    width: "100%",
-                    fontSize: "14px",
-                    marginBottom: "12px",
-                }}
-            >
-                <tbody>
-                    <tr>
-                        <td>
-                            <strong>Payment</strong>
-                        </td>
-
-                        <td style={{ textAlign: "right" }}>
-                            {order.paymentMethod}
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <strong>Status</strong>
-                        </td>
-
-                        <td style={{ textAlign: "right" }}>
-                            {order.paymentStatus}
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <strong>Amount</strong>
-                        </td>
-
-                        <td
-                            style={{
-                                textAlign: "right",
-                                fontSize: "16px",
-                                fontWeight: "700",
-                            }}
-                        >
-                            ₹{order.finalAmount}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <hr />
-
-            {/* Barcode */}
-
+            {/* ================= ORDER SUMMARY ================= */}
             <div
                 style={{
-                    width: "100%",
-                    overflow: "hidden",
+                    padding: "10px 0",
+                    borderBottom: "2px solid #111",
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "5px",
+                        fontSize: "10px",
+                    }}
+                >
+                    <span>Payment Status</span>
+
+                    <strong
+                        style={{
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        {order.paymentStatus}
+                    </strong>
+                </div>
+
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: "7px",
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: "12px",
+                            fontWeight: "700",
+                        }}
+                    >
+                        TOTAL AMOUNT
+                    </span>
+
+                    <span
+                        style={{
+                            fontSize: "18px",
+                            fontWeight: "800",
+                        }}
+                    >
+                        ₹{Number(order.finalAmount || 0).toLocaleString(
+                            "en-IN"
+                        )}
+                    </span>
+                </div>
+            </div>
+
+            {/* ================= BARCODE ================= */}
+            <div
+                style={{
                     textAlign: "center",
-                    marginTop: "12px",
+                    paddingTop: "10px",
                 }}
             >
                 <Barcode
                     value={order._id}
-                    width={1}
-                    height={45}
+                    width={1.25}
+                    height={42}
                     displayValue={true}
-                    fontSize={10}
+                    fontSize={9}
                     margin={0}
-                    marginTop={5}
-                    marginBottom={5}
+                    marginTop={0}
+                    marginBottom={0}
                 />
 
                 <div
                     style={{
-                        marginTop: "8px",
-                        fontSize: "11px",
+                        fontSize: "8px",
                         color: "#666",
+                        marginTop: "5px",
+                        letterSpacing: "0.3px",
                     }}
                 >
-                    Thank you for shopping with
-                    <br />
-                    <strong>SOUK Fashion House</strong>
+                    Scan for order identification
+                </div>
+            </div>
+
+            {/* ================= FOOTER ================= */}
+            <div
+                style={{
+                    textAlign: "center",
+                    marginTop: "8px",
+                    paddingTop: "7px",
+                    borderTop: "1px solid #ddd",
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                    }}
+                >
+                    Thank you for shopping with SOUK
+                </div>
+
+                <div
+                    style={{
+                        fontSize: "8px",
+                        color: "#777",
+                        marginTop: "3px",
+                    }}
+                >
+                    SOUK Fashion House • Packed with care
                 </div>
             </div>
         </div>

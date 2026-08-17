@@ -12,10 +12,12 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+
     size: {
-      type: String,
-      default: "",
+      type: Number,
+      required: true,
     },
+
     color: {
       type: String,
       default: "",

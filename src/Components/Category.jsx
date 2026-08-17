@@ -1,28 +1,34 @@
 import React from "react";
+import Dupatta from "../assets/Dupatta.jpg";
+import Kurti from "../assets/Kurti.jpg";
+import Shawl from "../assets/Shawl.jpg";
+import Stole from "../assets/Stole.jpg";
+
 
 export default function Category() {
-  const categories = [
+const categories = [
     {
       id: 1,
-      name: "Shawls",
-      image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600",
+      name: "Kashmiri Shawls",
+      image: Shawl,
     },
     {
       id: 2,
       name: "Kurti",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600",
+      image: Kurti,
     },
     {
       id: 3,
-      name: "Sarees",
-      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600",
+      name: "Embroidery Dupatta",
+      image: Dupatta,
     },
     {
       id: 4,
-      name: "Festive Sets",
-      image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600",
+      name: "Embroidery Stole",
+      image: Stole,
     },
   ];
+
 
   return (
     <section className="categories-section">

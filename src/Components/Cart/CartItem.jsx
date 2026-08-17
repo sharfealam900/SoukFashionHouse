@@ -37,6 +37,18 @@ export default function CartItem({
           {item.product.category?.name}
         </p>
 
+        {item.size && (
+  <p className="mb-2">
+    <strong>Size:</strong> {item.size}
+  </p>
+)}
+
+{item.color && (
+  <p className="mb-2">
+    <strong>Color:</strong> {item.color}
+  </p>
+)}
+
         <div className="d-flex align-items-center gap-2">
 
           <h5 className="mb-0">

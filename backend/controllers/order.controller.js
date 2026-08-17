@@ -4,28 +4,26 @@ import Product from "../models/product.model.js";
 import Coupon from "../models/coupon.model.js";
 import ExcelJS from "exceljs";
 
-/* ============================
-   PLACE ORDER
-============================ */
+
+
 
 export const placeOrder = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const { shippingAddress, paymentMethod, couponCode } = req.body;
-
     const {
-      fullName,
-      phone,
-      email,
-      address,
-    } = shippingAddress;
+      shippingAddress,
+      paymentMethod,
+      couponCode,
+    } = req.body;
+
+
 
     if (
-      !fullName ||
-      !phone ||
-      !email ||
-      !address
+      !shippingAddress?.fullName ||
+      !shippingAddress?.phone ||
+      !shippingAddress?.email ||
+      !shippingAddress?.address
     ) {
       return res.status(400).json({
         success: false,
@@ -45,34 +43,87 @@ export const placeOrder = async (req, res) => {
       });
     }
 
+ 
+
+    const validItems = cart.items.filter(
+      (item) => item.product
+    );
+
+    const invalidItems = cart.items.filter(
+      (item) => !item.product
+    );
+
+    // Remove stale/deleted products from cart
+    if (invalidItems.length > 0) {
+      cart.items = validItems;
+      await cart.save();
+    }
+
+    if (validItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "All products in your cart are no longer available.",
+      });
+    }
+
 
     let totalAmount = 0;
     let discountAmount = 0;
     let finalAmount = 0;
+
     let appliedCoupon = null;
 
     const orderItems = [];
 
-    // First calculate subtotal
-    for (const item of cart.items) {
+      
 
+    for (const item of validItems) {
       const product = item.product;
 
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found",
-        });
+
+      let selectedSize = null;
+
+      if (product.sizes?.length > 0) {
+        selectedSize = product.sizes.find(
+          (sizeItem) =>
+            Number(sizeItem.size) === Number(item.size)
+        );
+
+        if (!selectedSize) {
+          return res.status(400).json({
+            success: false,
+            message: `${product.name}: selected size is no longer available`,
+          });
+        }
+
+        if (selectedSize.stock <= 0) {
+          return res.status(400).json({
+            success: false,
+            message: `${product.name}: size ${selectedSize.size} is out of stock`,
+          });
+        }
+
+        if (item.quantity > selectedSize.stock) {
+          return res.status(400).json({
+            success: false,
+            message: `${product.name}: only ${selectedSize.stock} item(s) available in size ${selectedSize.size}`,
+          });
+        }
+      } else {
+        // Product without size
+        if (product.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `${product.name} is out of stock`,
+          });
+        }
       }
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `${product.name} is out of stock`,
-        });
-      }
 
-      const productDiscount = Number(product.discount || 0);
+
+      const productDiscount =
+        Number(product.discount || 0);
 
       const price =
         product.price -
@@ -80,20 +131,15 @@ export const placeOrder = async (req, res) => {
 
       totalAmount += price * item.quantity;
 
+
       orderItems.push({
         product: product._id,
         quantity: item.quantity,
-        size: item.size,
-        color: item.color,
+        size: item.size || null,
+        color: item.color || "",
         price,
       });
-
-      product.stock -= item.quantity;
-      await product.save();
     }
-
-
-
 
 
     if (couponCode) {
@@ -129,7 +175,10 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      if (totalAmount < coupon.minimumOrderAmount) {
+      if (
+        totalAmount <
+        coupon.minimumOrderAmount
+      ) {
         return res.status(400).json({
           success: false,
           message: `Minimum order amount is ₹${coupon.minimumOrderAmount}`,
@@ -138,7 +187,9 @@ export const placeOrder = async (req, res) => {
 
       if (coupon.discountType === "percentage") {
         discountAmount =
-          (totalAmount * coupon.discountValue) / 100;
+          (totalAmount *
+            coupon.discountValue) /
+          100;
 
         if (coupon.maximumDiscount) {
           discountAmount = Math.min(
@@ -147,31 +198,61 @@ export const placeOrder = async (req, res) => {
           );
         }
       } else {
-        discountAmount = coupon.discountValue;
+        discountAmount =
+          coupon.discountValue;
       }
 
       appliedCoupon = coupon;
     }
+
+
 
     finalAmount = Math.max(
       totalAmount - discountAmount,
       0
     );
 
-    // Apply coupon discount to each item price
-    if (discountAmount > 0) {
-
-      const ratio = finalAmount / totalAmount;
+    if (
+      discountAmount > 0 &&
+      totalAmount > 0
+    ) {
+      const ratio =
+        finalAmount / totalAmount;
 
       orderItems.forEach((item) => {
-
         item.price = Number(
           (item.price * ratio).toFixed(2)
         );
-
       });
-
     }
+
+
+
+    for (const item of validItems) {
+      const product = item.product;
+
+      if (product.sizes?.length > 0) {
+        const sizeItem = product.sizes.find(
+          (size) =>
+            Number(size.size) ===
+            Number(item.size)
+        );
+
+        sizeItem.stock -= item.quantity;
+
+        // Keep total stock synchronized
+        product.stock = product.sizes.reduce(
+          (total, size) =>
+            total + Number(size.stock || 0),
+          0
+        );
+      } else {
+        product.stock -= item.quantity;
+      }
+
+      await product.save();
+    }
+
 
 
     const order = await Order.create({
@@ -193,7 +274,7 @@ export const placeOrder = async (req, res) => {
         : "",
     });
 
-
+ 
 
     if (appliedCoupon) {
       appliedCoupon.usedCount += 1;
@@ -202,12 +283,12 @@ export const placeOrder = async (req, res) => {
 
 
 
-
-    // Clear cart
     cart.items = [];
     await cart.save();
 
-    res.status(201).json({
+ 
+
+    return res.status(201).json({
       success: true,
       message: "Order placed successfully",
       order,
@@ -217,16 +298,19 @@ export const placeOrder = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "PLACE ORDER ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-/* ============================
-   GET MY ORDERS
-============================ */
+
 
 export const getUserOrders = async (req, res) => {
   try {
@@ -250,9 +334,7 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-/* ============================
-   GET SINGLE ORDER
-============================ */
+
 
 export const getSingleOrder = async (req, res) => {
   try {
@@ -285,9 +367,7 @@ export const getSingleOrder = async (req, res) => {
   }
 };
 
-/* ============================
-   CANCEL ORDER
-============================ */
+
 
 export const cancelOrder = async (req, res) => {
   try {
@@ -327,7 +407,14 @@ export const cancelOrder = async (req, res) => {
       const product = await Product.findById(item.product);
 
       if (product) {
-        product.stock += item.quantity;
+        const selectedSize = product.sizes.find(
+          (s) => s.size === Number(item.size)
+        );
+
+        if (selectedSize) {
+          selectedSize.stock += item.quantity;
+        }
+
         await product.save();
       }
     }
@@ -350,9 +437,7 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
-/* ============================
-   ADMIN - GET ALL ORDERS
-============================ */
+
 
 export const getAllOrders = async (req, res) => {
   try {
@@ -375,9 +460,7 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-/* ============================
-   ADMIN - UPDATE ORDER STATUS
-============================ */
+
 
 export const updateOrderStatus = async (req, res) => {
   try {

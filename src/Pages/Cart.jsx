@@ -1,135 +1,158 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
-
 import CartItem from "../Components/Cart/CartItem";
 import EmptyCart from "../Components/Cart/EmptyCart";
 import CartSummary from "../Components/Cart/CartSummary";
 
-import { useDispatch } from "react-redux";
-
-import { getCart, updateCart, removeCartItem, } from "../features/cart/cartApi";
+import {
+  updateCart,
+  removeCartItem,
+} from "../features/cart/cartApi";
 
 import {
-    setCart,
-    updateItemQuantity,
-    removeItem,
+  setCart,
+  updateItemQuantity,
+  removeItem,
 } from "../features/cart/cartSlice";
 
 import { toast } from "react-hot-toast";
 
-
-
 export default function Cart() {
+  const { items, cart } = useSelector((state) => state.cart);
+  const dispatch = useDispatch();
 
-    const { items, cart } = useSelector((state) => state.cart);
-    const dispatch = useDispatch();
+  // Remove deleted products
+  const validItems = items.filter((item) => item.product);
 
+  const handleIncrease = async (item) => {
+    const newQuantity = item.quantity + 1;
 
-    const handleIncrease = async (item) => {
-        dispatch(
-            updateItemQuantity({
-                productId: item.product._id,
-                quantity: item.quantity + 1,
-            })
-        );
-
-        try {
-            await updateCart(item.product._id, item.quantity + 1);
-        } catch (error) {
-            console.error(error);
-
-            dispatch(
-                updateItemQuantity({
-                    productId: item.product._id,
-                    quantity: item.quantity,
-                })
-            );
-
-            toast.error("Unable to update quantity");
-        }
-    };
-
-    const handleDecrease = async (item) => {
-        if (item.quantity <= 1) return;
-
-        dispatch(
-            updateItemQuantity({
-                productId: item.product._id,
-                quantity: item.quantity - 1,
-            })
-        );
-
-        try {
-            await updateCart(item.product._id, item.quantity - 1);
-        } catch (error) {
-            console.error(error);
-
-            dispatch(
-                updateItemQuantity({
-                    productId: item.product._id,
-                    quantity: item.quantity,
-                })
-            );
-
-            toast.error("Unable to update quantity");
-        }
-    };
-
-
-   const handleRemove = async (item) => {
-    // Save the complete cart
-    const previousCart = cart;
-
-    // Remove instantly
-    dispatch(removeItem(item.product._id));
+    dispatch(
+      updateItemQuantity({
+        productId: item.product._id,
+        size: item.size || "",
+        color: item.color || "",
+        quantity: newQuantity,
+      })
+    );
 
     try {
-        await removeCartItem(item.product._id);
-
-        toast.success("Item removed from cart");
+      await updateCart(
+        item.product._id,
+        newQuantity,
+        item.size || "",
+        item.color || ""
+      );
     } catch (error) {
-        console.error(error);
+      dispatch(
+        updateItemQuantity({
+          productId: item.product._id,
+          size: item.size || "",
+          color: item.color || "",
+          quantity: item.quantity,
+        })
+      );
 
-        // Restore complete cart
-        dispatch(setCart(previousCart));
-
-        toast.error("Unable to remove item");
+      toast.error("Unable to update quantity");
     }
-};
+  };
 
-    return (
-        <>
-            <Navbar />
+  const handleDecrease = async (item) => {
+    if (item.quantity <= 1) return;
 
-            <section className="cart-page container py-5">
-                <h1 className="mb-4">
-                    Shopping Bag ({items.length})
-                </h1>
+    const newQuantity = item.quantity - 1;
 
-                {items.length === 0 ? (
-                    <EmptyCart />
-                ) : (
-                    <div className="cart-layout">
-                        <div className="cart-items">
-                            {items.map((item) => (
-                                <CartItem
-                                    key={item.product._id}
-                                    item={item}
-                                    onIncrease={handleIncrease}
-                                    onDecrease={handleDecrease}
-                                    onRemove={handleRemove}
-                                />
-                            ))}
-                        </div>
-
-                        <CartSummary items={items} />
-                    </div>
-                )}
-            </section>
-
-            <Footer />
-        </>
+    dispatch(
+      updateItemQuantity({
+        productId: item.product._id,
+        size: item.size || "",
+        color: item.color || "",
+        quantity: newQuantity,
+      })
     );
+
+    try {
+      await updateCart(
+        item.product._id,
+        newQuantity,
+        item.size || "",
+        item.color || ""
+      );
+    } catch (error) {
+      dispatch(
+        updateItemQuantity({
+          productId: item.product._id,
+          size: item.size || "",
+          color: item.color || "",
+          quantity: item.quantity,
+        })
+      );
+
+      toast.error("Unable to update quantity");
+    }
+  };
+
+  const handleRemove = async (item) => {
+    const previousCart = cart;
+
+    dispatch(
+      removeItem({
+        productId: item.product._id,
+        size: item.size || "",
+        color: item.color || "",
+      })
+    );
+
+    try {
+      await removeCartItem(
+        item.product._id,
+        item.size || "",
+        item.color || ""
+      );
+
+      toast.success("Item removed from cart");
+    } catch (error) {
+      dispatch(setCart(previousCart));
+
+      toast.error("Unable to remove item");
+    }
+  };
+
+  return (
+    <>
+      <Navbar />
+
+      <section className="cart-page container py-5">
+        <h1 className="mb-4">
+          Shopping Bag ({validItems.length})
+        </h1>
+
+        {validItems.length === 0 ? (
+          <EmptyCart />
+        ) : (
+          <div className="cart-layout">
+            <div className="cart-items">
+              {validItems.map((item) => (
+                <CartItem
+                  key={`${item.product._id}-${item.size || "no-size"}-${
+                    item.color || "no-color"
+                  }`}
+                  item={item}
+                  onIncrease={handleIncrease}
+                  onDecrease={handleDecrease}
+                  onRemove={handleRemove}
+                />
+              ))}
+            </div>
+
+            <CartSummary items={validItems} />
+          </div>
+        )}
+      </section>
+
+      <Footer />
+    </>
+  );
 }

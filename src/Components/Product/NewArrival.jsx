@@ -103,7 +103,10 @@ export default function NewArrival() {
                     >
                         {products.map((product) => (
                             <SwiperSlide key={product._id}>
-                                <ProductCard product={product} />
+                                <ProductCard
+                                    product={product}
+                                    showWishlistButton={true}
+                                />
                             </SwiperSlide>
                         ))}
                     </Swiper>
