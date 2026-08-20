@@ -1,6 +1,5 @@
 import express from "express";
 
-
 import {
   createBanner,
   getActiveBanners,
@@ -9,40 +8,34 @@ import {
   updateBanner,
   deleteBanner,
 } from "../controllers/banner.controller.js";
+
 import upload from "../middleware/upload.middleware.js";
+
+import {
+  protect,
+  isAdmin,
+} from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
 
+
+// Get active banners for website
 router.get("/", getActiveBanners);
 
-/*
-|--------------------------------------------------------------------------
-| Admin Routes
-|--------------------------------------------------------------------------
-*/
+// Get all banners
+router.get("/all", protect,isAdmin,getAllBanners);
 
-router.get("/all", getAllBanners);
+// Get banner by ID
+router.get("/:id",protect,isAdmin,getBannerById);
 
-router.get("/:id", getBannerById);
+// Create banner
+router.post("/", protect, isAdmin, upload.array("images", 5), createBanner);
 
-router.post(
-  "/",
-  upload.array("images", 5),
-  createBanner
-);
+// Update banner
+router.put("/:id",protect,isAdmin, upload.array("images", 5), updateBanner);
 
-router.put(
-  "/:id",
-  upload.array("images", 5),
-  updateBanner
-);
-
-router.delete("/:id", deleteBanner);
+// Delete banner
+router.delete("/:id", protect, isAdmin, deleteBanner);
 
 export default router;

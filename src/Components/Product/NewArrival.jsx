@@ -76,7 +76,10 @@ export default function NewArrival() {
 
                     <Swiper
                         modules={[Navigation]}
-                        navigation={true}
+                        navigation={{
+                            prevEl: prevRef.current,
+                            nextEl: nextRef.current,
+                        }}
                         spaceBetween={30}
                         slidesPerView={4}
                         slidesPerGroup={4}

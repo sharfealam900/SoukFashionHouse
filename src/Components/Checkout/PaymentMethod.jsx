@@ -12,13 +12,16 @@ export default function PaymentMethod({
 
       <div className="payment-options">
 
+        {/* COD */}
         <label className="payment-option">
           <input
             type="radio"
             name="payment"
             value="COD"
             checked={paymentMethod === "COD"}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value)
+            }
           />
 
           <span>
@@ -26,13 +29,16 @@ export default function PaymentMethod({
           </span>
         </label>
 
+        {/* Razorpay */}
         <label className="payment-option">
           <input
             type="radio"
             name="payment"
-            value="Razorpay"
-            checked={paymentMethod === "Razorpay"}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            value="RAZORPAY"
+            checked={paymentMethod === "RAZORPAY"}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value)
+            }
           />
 
           <span>

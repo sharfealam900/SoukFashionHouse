@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
@@ -8,6 +9,8 @@ import ExcelJS from "exceljs";
 
 
 export const placeOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const userId = req.user._id;
 
@@ -15,298 +18,470 @@ export const placeOrder = async (req, res) => {
       shippingAddress,
       paymentMethod,
       couponCode,
+
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
     } = req.body;
 
+    const fail = (status, message) => {
+      const error = new Error(message);
+      error.statusCode = status;
+      throw error;
+    };
 
-
-    if (
-      !shippingAddress?.fullName ||
-      !shippingAddress?.phone ||
-      !shippingAddress?.email ||
-      !shippingAddress?.address
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Shipping address is required",
-      });
-    }
-
-
-    const cart = await Cart.findOne({
-      user: userId,
-    }).populate("items.product");
-
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Cart is empty",
-      });
-    }
-
- 
-
-    const validItems = cart.items.filter(
-      (item) => item.product
-    );
-
-    const invalidItems = cart.items.filter(
-      (item) => !item.product
-    );
-
-    // Remove stale/deleted products from cart
-    if (invalidItems.length > 0) {
-      cart.items = validItems;
-      await cart.save();
-    }
-
-    if (validItems.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "All products in your cart are no longer available.",
-      });
-    }
-
-
+    let createdOrder = null;
     let totalAmount = 0;
     let discountAmount = 0;
     let finalAmount = 0;
 
-    let appliedCoupon = null;
+    await session.withTransaction(async () => {
 
-    const orderItems = [];
-
-      
-
-    for (const item of validItems) {
-      const product = item.product;
-
-
-      let selectedSize = null;
-
-      if (product.sizes?.length > 0) {
-        selectedSize = product.sizes.find(
-          (sizeItem) =>
-            Number(sizeItem.size) === Number(item.size)
-        );
-
-        if (!selectedSize) {
-          return res.status(400).json({
-            success: false,
-            message: `${product.name}: selected size is no longer available`,
-          });
-        }
-
-        if (selectedSize.stock <= 0) {
-          return res.status(400).json({
-            success: false,
-            message: `${product.name}: size ${selectedSize.size} is out of stock`,
-          });
-        }
-
-        if (item.quantity > selectedSize.stock) {
-          return res.status(400).json({
-            success: false,
-            message: `${product.name}: only ${selectedSize.stock} item(s) available in size ${selectedSize.size}`,
-          });
-        }
-      } else {
-        // Product without size
-        if (product.stock < item.quantity) {
-          return res.status(400).json({
-            success: false,
-            message: `${product.name} is out of stock`,
-          });
-        }
-      }
-
-
-
-      const productDiscount =
-        Number(product.discount || 0);
-
-      const price =
-        product.price -
-        (product.price * productDiscount) / 100;
-
-      totalAmount += price * item.quantity;
-
-
-      orderItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        size: item.size || null,
-        color: item.color || "",
-        price,
-      });
-    }
-
-
-    if (couponCode) {
-      const coupon = await Coupon.findOne({
-        code: couponCode.toUpperCase(),
-      });
-
-      if (!coupon) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid coupon.",
-        });
-      }
-
-      if (!coupon.isActive) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon is inactive.",
-        });
-      }
-
-      if (coupon.expiresAt < new Date()) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon has expired.",
-        });
-      }
-
-      if (coupon.usedCount >= coupon.usageLimit) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon usage limit exceeded.",
-        });
-      }
+      // =========================================================
+      // 1. Validate shipping address
+      // =========================================================
 
       if (
-        totalAmount <
-        coupon.minimumOrderAmount
+        !shippingAddress?.fullName ||
+        !shippingAddress?.phone ||
+        !shippingAddress?.email ||
+        !shippingAddress?.address
       ) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum order amount is ₹${coupon.minimumOrderAmount}`,
+        fail(400, "Shipping address is required");
+      }
+
+      // =========================================================
+      // 2. Get cart inside transaction
+      // =========================================================
+
+      const cart = await Cart.findOne({
+        user: userId,
+      })
+        .populate("items.product")
+        .session(session);
+
+      if (!cart || cart.items.length === 0) {
+        fail(400, "Cart is empty");
+      }
+
+      // =========================================================
+      // 3. Remove stale/deleted products
+      // =========================================================
+
+      const validItems = cart.items.filter(
+        (item) => item.product
+      );
+
+      const invalidItems = cart.items.filter(
+        (item) => !item.product
+      );
+
+      if (invalidItems.length > 0) {
+        cart.items = validItems;
+        await cart.save({ session });
+      }
+
+      if (validItems.length === 0) {
+        fail(
+          400,
+          "All products in your cart are no longer available."
+        );
+      }
+
+      // =========================================================
+      // 4. Calculate products and validate stock
+      // =========================================================
+
+      let appliedCoupon = null;
+
+      const orderItems = [];
+
+      for (const item of validItems) {
+        const product = item.product;
+
+        // -------------------------------------------------------
+        // Validate quantity
+        // -------------------------------------------------------
+
+        const quantity = Number(item.quantity);
+
+        if (
+          !Number.isInteger(quantity) ||
+          quantity <= 0
+        ) {
+          fail(
+            400,
+            `${product.name}: invalid quantity`
+          );
+        }
+
+        // -------------------------------------------------------
+        // Validate product size / stock
+        // -------------------------------------------------------
+
+        let selectedSize = null;
+
+        if (product.sizes?.length > 0) {
+
+          selectedSize = product.sizes.find(
+            (sizeItem) =>
+              Number(sizeItem.size) ===
+              Number(item.size)
+          );
+
+          if (!selectedSize) {
+            fail(
+              400,
+              `${product.name}: selected size is no longer available`
+            );
+          }
+
+          if (selectedSize.stock <= 0) {
+            fail(
+              400,
+              `${product.name}: size ${selectedSize.size} is out of stock`
+            );
+          }
+
+          if (quantity > selectedSize.stock) {
+            fail(
+              400,
+              `${product.name}: only ${selectedSize.stock} item(s) available in size ${selectedSize.size}`
+            );
+          }
+
+        } else {
+
+          // -----------------------------------------------------
+          // Product without size
+          // -----------------------------------------------------
+
+          if (product.stock < quantity) {
+            fail(
+              400,
+              `${product.name} is out of stock`
+            );
+          }
+        }
+
+        // -------------------------------------------------------
+        // Calculate product price
+        // -------------------------------------------------------
+
+        const productDiscount =
+          Number(product.discount || 0);
+
+        const price =
+          product.price -
+          (product.price * productDiscount) / 100;
+
+        totalAmount += price * quantity;
+
+        orderItems.push({
+          product: product._id,
+          quantity,
+          size:
+            item.size !== undefined &&
+              item.size !== null &&
+              item.size !== ""
+              ? Number(item.size)
+              : null,
+          color: item.color || "",
+          price,
         });
       }
 
-      if (coupon.discountType === "percentage") {
-        discountAmount =
-          (totalAmount *
-            coupon.discountValue) /
-          100;
+      // =========================================================
+      // 5. Validate coupon
+      // =========================================================
 
-        if (coupon.maximumDiscount) {
-          discountAmount = Math.min(
-            discountAmount,
-            coupon.maximumDiscount
+      if (couponCode) {
+
+        const normalizedCouponCode =
+          String(couponCode)
+            .trim()
+            .toUpperCase();
+
+        const coupon = await Coupon.findOne({
+          code: normalizedCouponCode,
+        }).session(session);
+
+        if (!coupon) {
+          fail(400, "Invalid coupon.");
+        }
+
+        if (!coupon.isActive) {
+          fail(400, "Coupon is inactive.");
+        }
+
+        if (
+          coupon.expiresAt &&
+          coupon.expiresAt < new Date()
+        ) {
+          fail(400, "Coupon has expired.");
+        }
+
+        if (
+          coupon.usedCount >= coupon.usageLimit
+        ) {
+          fail(
+            400,
+            "Coupon usage limit exceeded."
           );
         }
-      } else {
-        discountAmount =
-          coupon.discountValue;
+
+        if (
+          totalAmount <
+          coupon.minimumOrderAmount
+        ) {
+          fail(
+            400,
+            `Minimum order amount is ₹${coupon.minimumOrderAmount}`
+          );
+        }
+
+        if (coupon.discountType === "percentage") {
+
+          discountAmount =
+            (totalAmount *
+              coupon.discountValue) /
+            100;
+
+          if (coupon.maximumDiscount) {
+            discountAmount = Math.min(
+              discountAmount,
+              coupon.maximumDiscount
+            );
+          }
+
+        } else {
+
+          discountAmount =
+            coupon.discountValue;
+        }
+
+        // Never allow discount above subtotal
+        discountAmount = Math.min(
+          discountAmount,
+          totalAmount
+        );
+
+        appliedCoupon = coupon;
       }
 
-      appliedCoupon = coupon;
-    }
+      // =========================================================
+      // 6. Calculate final amount
+      // =========================================================
 
+      finalAmount = Math.max(
+        totalAmount - discountAmount,
+        0
+      );
 
+      // =========================================================
+      // 7. Distribute coupon discount across items
+      // =========================================================
 
-    finalAmount = Math.max(
-      totalAmount - discountAmount,
-      0
-    );
+      if (
+        discountAmount > 0 &&
+        totalAmount > 0
+      ) {
+        const ratio =
+          finalAmount / totalAmount;
 
-    if (
-      discountAmount > 0 &&
-      totalAmount > 0
-    ) {
-      const ratio =
-        finalAmount / totalAmount;
+        orderItems.forEach((item) => {
+          item.price = Number(
+            (item.price * ratio).toFixed(2)
+          );
+        });
+      }
 
-      orderItems.forEach((item) => {
-        item.price = Number(
-          (item.price * ratio).toFixed(2)
-        );
+      // =========================================================
+      // 8. Atomically reserve/decrease stock
+      // =========================================================
+
+      for (const item of validItems) {
+
+        const product = await Product.findById(
+          item.product._id
+        ).session(session);
+
+        if (!product) {
+          fail(
+            400,
+            "A product in your cart is no longer available."
+          );
+        }
+
+        const quantity = Number(item.quantity);
+
+        // -------------------------------------------------------
+        // Product with sizes
+        // -------------------------------------------------------
+
+        if (product.sizes?.length > 0) {
+
+          const sizeItem = product.sizes.find(
+            (size) =>
+              Number(size.size) ===
+              Number(item.size)
+          );
+
+          if (!sizeItem) {
+            fail(
+              400,
+              `${product.name}: selected size is no longer available`
+            );
+          }
+
+          if (sizeItem.stock < quantity) {
+            fail(
+              400,
+              `${product.name}: insufficient stock for size ${sizeItem.size}`
+            );
+          }
+
+          sizeItem.stock -= quantity;
+
+          // Keep total stock synchronized
+          product.stock =
+            product.sizes.reduce(
+              (total, size) =>
+                total +
+                Number(size.stock || 0),
+              0
+            );
+
+        } else {
+
+          // -----------------------------------------------------
+          // Product without sizes
+          // -----------------------------------------------------
+
+          if (product.stock < quantity) {
+            fail(
+              400,
+              `${product.name}: insufficient stock`
+            );
+          }
+
+          product.stock -= quantity;
+        }
+
+        await product.save({ session });
+      }
+
+      // =========================================================
+      // 9. Create order inside transaction
+      // =========================================================
+
+      createdOrder = await Order.create(
+        [
+          {
+            user: userId,
+            items: orderItems,
+            shippingAddress,
+            paymentMethod,
+
+            // ==============================
+            // PAYMENT STATUS
+            // ==============================
+            paymentStatus:
+              paymentMethod === "RAZORPAY"
+                ? "Paid"
+                : "Pending",
+
+            // ==============================
+            // RAZORPAY DETAILS
+            // ==============================
+            razorpayOrderId:
+              razorpayOrderId || "",
+
+            razorpayPaymentId:
+              razorpayPaymentId || "",
+
+            razorpaySignature:
+              razorpaySignature || "",
+
+            // ==============================
+            // ORDER STATUS
+            // ==============================
+            orderStatus:
+              paymentMethod === "RAZORPAY"
+                ? "Confirmed"
+                : "Pending",
+
+            totalAmount,
+            discountAmount,
+            finalAmount,
+
+            coupon: appliedCoupon
+              ? appliedCoupon._id
+              : null,
+
+            couponCode: appliedCoupon
+              ? appliedCoupon.code
+              : "",
+          },
+        ],
+        { session }
+      );
+      createdOrder = createdOrder[0];
+
+      // =========================================================
+      // 10. Increment coupon usage
+      // =========================================================
+
+      if (appliedCoupon) {
+
+        appliedCoupon.usedCount += 1;
+
+        await appliedCoupon.save({
+          session,
+        });
+      }
+
+      // =========================================================
+      // 11. Clear cart
+      // =========================================================
+
+      cart.items = [];
+
+      await cart.save({
+        session,
       });
-    }
-
-
-
-    for (const item of validItems) {
-      const product = item.product;
-
-      if (product.sizes?.length > 0) {
-        const sizeItem = product.sizes.find(
-          (size) =>
-            Number(size.size) ===
-            Number(item.size)
-        );
-
-        sizeItem.stock -= item.quantity;
-
-        // Keep total stock synchronized
-        product.stock = product.sizes.reduce(
-          (total, size) =>
-            total + Number(size.stock || 0),
-          0
-        );
-      } else {
-        product.stock -= item.quantity;
-      }
-
-      await product.save();
-    }
-
-
-
-    const order = await Order.create({
-      user: userId,
-      items: orderItems,
-      shippingAddress,
-      paymentMethod,
-
-      totalAmount,
-      discountAmount,
-      finalAmount,
-
-      coupon: appliedCoupon
-        ? appliedCoupon._id
-        : null,
-
-      couponCode: appliedCoupon
-        ? appliedCoupon.code
-        : "",
     });
 
- 
-
-    if (appliedCoupon) {
-      appliedCoupon.usedCount += 1;
-      await appliedCoupon.save();
-    }
-
-
-
-    cart.items = [];
-    await cart.save();
-
- 
+    // ===========================================================
+    // Transaction successful
+    // ===========================================================
 
     return res.status(201).json({
       success: true,
       message: "Order placed successfully",
-      order,
+      order: createdOrder,
       totalAmount,
       discountAmount,
       finalAmount,
     });
 
   } catch (error) {
+
     console.error(
       "PLACE ORDER ERROR:",
       error
     );
 
-    return res.status(500).json({
+    return res.status(
+      error.statusCode || 500
+    ).json({
       success: false,
       message: error.message,
     });
+
+  } finally {
+
+    await session.endSession();
   }
 };
 
@@ -406,17 +581,32 @@ export const cancelOrder = async (req, res) => {
     for (const item of order.items) {
       const product = await Product.findById(item.product);
 
-      if (product) {
+      if (!product) {
+        continue;
+      }
+
+      // Product has sizes
+      if (product.sizes && product.sizes.length > 0) {
         const selectedSize = product.sizes.find(
-          (s) => s.size === Number(item.size)
+          (s) => Number(s.size) === Number(item.size)
         );
 
         if (selectedSize) {
           selectedSize.stock += item.quantity;
         }
 
-        await product.save();
+        // Recalculate total stock
+        product.stock = product.sizes.reduce(
+          (total, size) =>
+            total + Number(size.stock || 0),
+          0
+        );
+      } else {
+        // Product without sizes
+        product.stock += item.quantity;
       }
+
+      await product.save();
     }
 
     order.orderStatus = "Cancelled";
@@ -477,6 +667,7 @@ export const updateOrderStatus = async (req, res) => {
       "Cancelled",
     ];
 
+    // Validate requested status
     if (!validStatuses.includes(orderStatus)) {
       return res.status(400).json({
         success: false,
@@ -493,19 +684,93 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    const currentStatus = order.orderStatus;
+
     // Don't update if already same status
-    if (order.orderStatus === orderStatus) {
+    if (currentStatus === orderStatus) {
       return res.status(400).json({
         success: false,
         message: `Order is already ${orderStatus}`,
       });
     }
 
-    // If delivered for first time
+    /*
+    |--------------------------------------------------------------------------
+    | Cancelled orders are final
+    |--------------------------------------------------------------------------
+    */
+
+    if (currentStatus === "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Cancelled orders cannot be updated",
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivered orders are final
+    |--------------------------------------------------------------------------
+    */
+
+    if (currentStatus === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Delivered orders cannot be changed",
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cancelled orders cannot be created after shipping
+    |--------------------------------------------------------------------------
+    */
+
     if (
-      orderStatus === "Delivered" &&
-      order.orderStatus !== "Delivered"
+      orderStatus === "Cancelled" &&
+      (
+        currentStatus === "Shipped" ||
+        currentStatus === "Out for Delivery"
+      )
     ) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order that is already ${currentStatus.toLowerCase()}`,
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prevent invalid backward status transitions
+    |--------------------------------------------------------------------------
+    */
+
+    const statusOrder = {
+      Pending: 1,
+      Confirmed: 2,
+      Packed: 3,
+      Shipped: 4,
+      "Out for Delivery": 5,
+      Delivered: 6,
+    };
+
+    if (
+      orderStatus !== "Cancelled" &&
+      statusOrder[orderStatus] < statusOrder[currentStatus]
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot move order from ${currentStatus} back to ${orderStatus}`,
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivered
+    |--------------------------------------------------------------------------
+    */
+
+    if (orderStatus === "Delivered") {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
           item.product,
@@ -517,15 +782,66 @@ export const updateOrderStatus = async (req, res) => {
         );
       }
 
+      // COD becomes paid when delivered
       if (order.paymentMethod === "COD") {
         order.paymentStatus = "Paid";
       }
     }
 
-    // Update current status
+    /*
+    |--------------------------------------------------------------------------
+    | Cancelled
+    |--------------------------------------------------------------------------
+    */
+
+    if (orderStatus === "Cancelled") {
+      // Restore stock
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+
+        if (!product) {
+          continue;
+        }
+
+        // Product has sizes
+        if (product.sizes && product.sizes.length > 0) {
+          const selectedSize = product.sizes.find(
+            (s) => Number(s.size) === Number(item.size)
+          );
+
+          if (selectedSize) {
+            selectedSize.stock += item.quantity;
+          }
+
+          // Recalculate total stock
+          product.stock = product.sizes.reduce(
+            (total, size) =>
+              total + Number(size.stock || 0),
+            0
+          );
+        } else {
+          // Product without sizes
+          product.stock += item.quantity;
+        }
+
+        await product.save();
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update order status
+    |--------------------------------------------------------------------------
+    */
+
     order.orderStatus = orderStatus;
 
-    // Save tracking history
+    /*
+    |--------------------------------------------------------------------------
+    | Tracking history
+    |--------------------------------------------------------------------------
+    */
+
     order.trackingHistory.push({
       status: orderStatus,
       updatedAt: new Date(),
@@ -533,14 +849,16 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Order status updated successfully.",
       order,
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error("Update order status error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

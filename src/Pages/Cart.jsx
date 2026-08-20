@@ -1,7 +1,9 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
+
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
+
 import CartItem from "../Components/Cart/CartItem";
 import EmptyCart from "../Components/Cart/EmptyCart";
 import CartSummary from "../Components/Cart/CartSummary";
@@ -21,20 +23,173 @@ import { toast } from "react-hot-toast";
 
 export default function Cart() {
   const { items, cart } = useSelector((state) => state.cart);
+
   const dispatch = useDispatch();
 
-  // Remove deleted products
-  const validItems = items.filter((item) => item.product);
+  // =====================================================
+  // REMOVE DELETED / INVALID PRODUCTS
+  // =====================================================
+
+  const validItems = items.filter(
+    (item) => item?.product
+  );
+
+  // =====================================================
+  // GET AVAILABLE STOCK
+  // =====================================================
+
+  const getAvailableStock = (item) => {
+    const product = item?.product;
+
+    if (!product) {
+      return 0;
+    }
+
+    /*
+    -------------------------------------------------------
+    PRODUCTS WITH SIZE
+
+    Example:
+
+    sizes: [
+      { size: 38, stock: 5 },
+      { size: 40, stock: 1 },
+      { size: 42, stock: 3 }
+    ]
+
+    If cart item has size 40:
+
+    availableStock = 1
+    -------------------------------------------------------
+    */
+
+    if (
+      Array.isArray(product.sizes) &&
+      product.sizes.length > 0 &&
+      item.size !== undefined &&
+      item.size !== null &&
+      item.size !== ""
+    ) {
+      const selectedSize = product.sizes.find(
+        (sizeItem) =>
+          Number(sizeItem.size) === Number(item.size)
+      );
+
+      if (!selectedSize) {
+        return 0;
+      }
+
+      return Math.max(
+        0,
+        Number(selectedSize.stock || 0)
+      );
+    }
+
+    /*
+    -------------------------------------------------------
+    PRODUCTS WITHOUT SIZE
+    -------------------------------------------------------
+    */
+
+    return Math.max(
+      0,
+      Number(product.stock || 0)
+    );
+  };
+
+  // =====================================================
+  // GET STOCK MESSAGE
+  // =====================================================
+
+  const getStockMessage = (item) => {
+    const availableStock =
+      getAvailableStock(item);
+
+    if (availableStock <= 0) {
+      return "This item is currently unavailable";
+    }
+
+    /*
+    Show message only when quantity
+    has reached the available stock.
+    */
+
+    if (item.quantity >= availableStock) {
+      if (
+        item.size !== undefined &&
+        item.size !== null &&
+        item.size !== ""
+      ) {
+        return `Only ${availableStock} ${
+          availableStock === 1
+            ? "item"
+            : "items"
+        } available in size ${item.size}`;
+      }
+
+      return `Only ${availableStock} ${
+        availableStock === 1
+          ? "item"
+          : "items"
+      } available`;
+    }
+
+    return "";
+  };
+
+  // =====================================================
+  // INCREASE QUANTITY
+  // =====================================================
 
   const handleIncrease = async (item) => {
-    const newQuantity = item.quantity + 1;
+    const availableStock =
+      getAvailableStock(item);
+
+    /*
+    -------------------------------------------------------
+    IMPORTANT
+
+    Do NOT call the API if the user has already
+    reached the maximum available stock.
+
+    This prevents unnecessary 400 errors.
+    -------------------------------------------------------
+    */
+
+    if (
+      availableStock <= 0
+    ) {
+      return;
+    }
+
+    if (
+      item.quantity >= availableStock
+    ) {
+      return;
+    }
+
+    const newQuantity =
+      item.quantity + 1;
+
+    /*
+    -------------------------------------------------------
+    OPTIMISTIC UPDATE
+    -------------------------------------------------------
+    */
 
     dispatch(
       updateItemQuantity({
-        productId: item.product._id,
-        size: item.size || "",
-        color: item.color || "",
-        quantity: newQuantity,
+        productId:
+          item.product._id,
+
+        size:
+          item.size || "",
+
+        color:
+          item.color || "",
+
+        quantity:
+          newQuantity,
       })
     );
 
@@ -46,30 +201,71 @@ export default function Cart() {
         item.color || ""
       );
     } catch (error) {
+      /*
+      -----------------------------------------------------
+      ROLLBACK IF API FAILS
+      -----------------------------------------------------
+      */
+
       dispatch(
         updateItemQuantity({
-          productId: item.product._id,
-          size: item.size || "",
-          color: item.color || "",
-          quantity: item.quantity,
+          productId:
+            item.product._id,
+
+          size:
+            item.size || "",
+
+          color:
+            item.color || "",
+
+          quantity:
+            item.quantity,
         })
       );
 
-      toast.error("Unable to update quantity");
+      const backendMessage =
+        error.response?.data?.message;
+
+      toast.error(
+        backendMessage ||
+          "Unable to update quantity"
+      );
     }
   };
+
+  // =====================================================
+  // DECREASE QUANTITY
+  // =====================================================
 
   const handleDecrease = async (item) => {
-    if (item.quantity <= 1) return;
+    if (
+      item.quantity <= 1
+    ) {
+      return;
+    }
 
-    const newQuantity = item.quantity - 1;
+    const newQuantity =
+      item.quantity - 1;
+
+    /*
+    -------------------------------------------------------
+    OPTIMISTIC UPDATE
+    -------------------------------------------------------
+    */
 
     dispatch(
       updateItemQuantity({
-        productId: item.product._id,
-        size: item.size || "",
-        color: item.color || "",
-        quantity: newQuantity,
+        productId:
+          item.product._id,
+
+        size:
+          item.size || "",
+
+        color:
+          item.color || "",
+
+        quantity:
+          newQuantity,
       })
     );
 
@@ -81,27 +277,61 @@ export default function Cart() {
         item.color || ""
       );
     } catch (error) {
+      /*
+      -----------------------------------------------------
+      ROLLBACK
+      -----------------------------------------------------
+      */
+
       dispatch(
         updateItemQuantity({
-          productId: item.product._id,
-          size: item.size || "",
-          color: item.color || "",
-          quantity: item.quantity,
+          productId:
+            item.product._id,
+
+          size:
+            item.size || "",
+
+          color:
+            item.color || "",
+
+          quantity:
+            item.quantity,
         })
       );
 
-      toast.error("Unable to update quantity");
+      const backendMessage =
+        error.response?.data?.message;
+
+      toast.error(
+        backendMessage ||
+          "Unable to update quantity"
+      );
     }
   };
+
+  // =====================================================
+  // REMOVE ITEM
+  // =====================================================
 
   const handleRemove = async (item) => {
     const previousCart = cart;
 
+    /*
+    -------------------------------------------------------
+    REMOVE FROM REDUX FIRST
+    -------------------------------------------------------
+    */
+
     dispatch(
       removeItem({
-        productId: item.product._id,
-        size: item.size || "",
-        color: item.color || "",
+        productId:
+          item.product._id,
+
+        size:
+          item.size || "",
+
+        color:
+          item.color || "",
       })
     );
 
@@ -112,19 +342,36 @@ export default function Cart() {
         item.color || ""
       );
 
-      toast.success("Item removed from cart");
+      toast.success(
+        "Item removed from cart"
+      );
     } catch (error) {
-      dispatch(setCart(previousCart));
+      /*
+      -----------------------------------------------------
+      RESTORE CART IF API FAILS
+      -----------------------------------------------------
+      */
 
-      toast.error("Unable to remove item");
+      dispatch(
+        setCart(previousCart)
+      );
+
+      toast.error(
+        "Unable to remove item"
+      );
     }
   };
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <>
       <Navbar />
 
       <section className="cart-page container py-5">
+
         <h1 className="mb-4">
           Shopping Bag ({validItems.length})
         </h1>
@@ -133,23 +380,47 @@ export default function Cart() {
           <EmptyCart />
         ) : (
           <div className="cart-layout">
+
             <div className="cart-items">
-              {validItems.map((item) => (
-                <CartItem
-                  key={`${item.product._id}-${item.size || "no-size"}-${
-                    item.color || "no-color"
-                  }`}
-                  item={item}
-                  onIncrease={handleIncrease}
-                  onDecrease={handleDecrease}
-                  onRemove={handleRemove}
-                />
-              ))}
+
+              {validItems.map((item) => {
+
+                const availableStock =
+                  getAvailableStock(item);
+
+                const stockMessage =
+                  getStockMessage(item);
+
+                return (
+                  <CartItem
+                    key={`
+                      ${item.product._id}-
+                      ${item.size || "no-size"}-
+                      ${item.color || "no-color"}
+                    `}
+                    item={item}
+                    onIncrease={handleIncrease}
+                    onDecrease={handleDecrease}
+                    onRemove={handleRemove}
+                    availableStock={
+                      availableStock
+                    }
+                    stockMessage={
+                      stockMessage
+                    }
+                  />
+                );
+              })}
+
             </div>
 
-            <CartSummary items={validItems} />
+            <CartSummary
+              items={validItems}
+            />
+
           </div>
         )}
+
       </section>
 
       <Footer />

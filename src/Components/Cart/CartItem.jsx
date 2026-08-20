@@ -1,69 +1,139 @@
 import React from "react";
-import { FaTrashAlt } from "react-icons/fa";
-
-import QuantitySelector from "./QuantitySelector";
 
 export default function CartItem({
   item,
   onIncrease,
   onDecrease,
   onRemove,
+  availableStock = 0,
+  stockMessage = "",
 }) {
-  const discount = Number(item.product.discount || 0);
+  const product = item?.product;
 
-  const price =
-    item.product.price -
-    (item.product.price * discount) / 100;
+  if (!product) {
+    return null;
+  }
 
-  const totalPrice = price * item.quantity;
+  // =====================================================
+  // PRODUCT IMAGE
+  // =====================================================
+
+  const productImage =
+    product?.images?.[0]?.url ||
+    product?.image ||
+    "";
+
+  // =====================================================
+  // PRICE
+  // =====================================================
+
+  const originalPrice =
+    Number(product?.price || 0);
+
+  const discount =
+    Number(product?.discount || 0);
+
+  const finalPrice =
+    originalPrice -
+    (originalPrice * discount) / 100;
+
+  const itemTotal =
+    finalPrice * item.quantity;
+
+  // =====================================================
+  // QUANTITY LIMIT
+  // =====================================================
+
+  const isMinimumQuantity =
+    item.quantity <= 1;
+
+  const isMaximumQuantity =
+    availableStock > 0 &&
+    item.quantity >= availableStock;
+
+  const isOutOfStock =
+    availableStock <= 0;
+
+  // =====================================================
+  // IMAGE
+  // =====================================================
 
   return (
     <div className="cart-item">
 
-      <div className="cart-image">
+      {/* =================================================
+          PRODUCT IMAGE
+      ================================================= */}
 
-        <img
-          src={item.product.images?.[0]?.url}
-          alt={item.product.name}
-        />
+      <div className="cart-item-image-wrapper">
+
+        {productImage ? (
+          <img
+            src={productImage}
+            alt={product.name}
+            className="cart-item-image"
+          />
+        ) : (
+          <div className="cart-item-image-placeholder">
+            No Image
+          </div>
+        )}
 
       </div>
 
-      <div className="cart-details">
+      {/* =================================================
+          PRODUCT INFORMATION
+      ================================================= */}
 
-        <h4>{item.product.name}</h4>
+      <div className="cart-item-content">
 
-        <p className="cart-category">
-          {item.product.category?.name}
-        </p>
+        {/* PRODUCT NAME */}
 
-        {item.size && (
-  <p className="mb-2">
-    <strong>Size:</strong> {item.size}
-  </p>
-)}
+        <h3 className="cart-item-title">
+          {product.name}
+        </h3>
 
-{item.color && (
-  <p className="mb-2">
-    <strong>Color:</strong> {item.color}
-  </p>
-)}
+        {/* SIZE */}
 
-        <div className="d-flex align-items-center gap-2">
+        {item.size !== undefined &&
+          item.size !== null &&
+          item.size !== "" && (
+            <div className="cart-item-size">
+              <span>Size:</span>{" "}
+              <strong>
+                {item.size}
+              </strong>
+            </div>
+          )}
 
-          <h5 className="mb-0">
-            ₹{price.toFixed(0)}
-          </h5>
+        {/* COLOR */}
+
+        {item.color && (
+          <div className="cart-item-color">
+            <span>Color:</span>{" "}
+            <strong>
+              {item.color}
+            </strong>
+          </div>
+        )}
+
+        {/* =================================================
+            PRICE
+        ================================================= */}
+
+        <div className="cart-item-price-row">
+
+          <span className="cart-item-current-price">
+            ₹{finalPrice.toFixed(0)}
+          </span>
 
           {discount > 0 && (
             <>
-              <small
-                className="text-muted text-decoration-line-through"
-              >
-                ₹{item.product.price}
-              </small>
+              <span className="cart-item-original-price">
+                ₹{originalPrice.toFixed(0)}
+              </span>
 
-              <span className="badge bg-danger">
+              <span className="cart-item-discount">
                 {discount}% OFF
               </span>
             </>
@@ -71,25 +141,104 @@ export default function CartItem({
 
         </div>
 
-        <QuantitySelector
-          quantity={item.quantity}
-          onIncrease={() => onIncrease(item)}
-          onDecrease={() => onDecrease(item)}
-        />
+        {/* =================================================
+            QUANTITY CONTROLS
+        ================================================= */}
 
-      </div>
+        <div className="cart-quantity-section">
 
-      <div className="cart-right">
+          <div className="cart-quantity-controls">
 
-        <h4>
-          ₹{totalPrice.toFixed(0)}
-        </h4>
+            {/* DECREASE */}
+
+            <button
+              type="button"
+              className="cart-quantity-btn"
+              onClick={() =>
+                onDecrease(item)
+              }
+              disabled={
+                isMinimumQuantity
+              }
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+
+            {/* QUANTITY */}
+
+            <span className="cart-quantity-value">
+              {item.quantity}
+            </span>
+
+            {/* INCREASE */}
+
+            <button
+              type="button"
+              className="cart-quantity-btn"
+              onClick={() =>
+                onIncrease(item)
+              }
+              disabled={
+                isMaximumQuantity ||
+                isOutOfStock
+              }
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+
+          </div>
+
+          {/* =================================================
+              STOCK MESSAGE
+
+              IMPORTANT:
+              This is now INSIDE the product card.
+
+              No toast.
+              No navbar overlap.
+          ================================================= */}
+
+          {stockMessage && (
+            <div className="cart-stock-warning">
+
+              <span className="cart-stock-warning-icon">
+                !
+              </span>
+
+              <span>
+                {stockMessage}
+              </span>
+
+            </div>
+          )}
+
+        </div>
+
+        {/* =================================================
+            TOTAL
+        ================================================= */}
+
+        <div className="cart-item-total">
+          ₹{itemTotal.toFixed(0)}
+        </div>
+
+        {/* =================================================
+            REMOVE
+        ================================================= */}
 
         <button
-          className="remove-btn"
-          onClick={() => onRemove(item)}
+          type="button"
+          className="cart-remove-btn"
+          onClick={() =>
+            onRemove(item)
+          }
         >
-          <FaTrashAlt />
+          <span className="cart-remove-icon">
+            🗑
+          </span>
+
           Remove
         </button>
 
