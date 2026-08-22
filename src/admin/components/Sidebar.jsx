@@ -1,89 +1,110 @@
 import { NavLink } from "react-router-dom";
 
-export default function Sidebar() {
+export default function Sidebar({
+  sidebarOpen,
+  setSidebarOpen,
+}) {
+  const closeSidebar = () => {
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
-    <aside className="admin-sidebar">
+    <aside
+      className={`admin-sidebar ${
+        sidebarOpen ? "mobile-open" : ""
+      }`}
+    >
+
+      {/* Logo */}
       <div className="admin-logo">
         SOUK ADMIN
       </div>
 
-      <nav className="nav flex-column mt-3">
+      {/* Navigation */}
+      <nav className="admin-nav">
 
         <NavLink
           to="/admin"
           end
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-speedometer2"></i>
-          Dashboard
+          <span>Dashboard</span>
         </NavLink>
 
         <NavLink
           to="/admin/products"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-box-seam"></i>
-          Products
+          <span>Products</span>
         </NavLink>
 
         <NavLink
           to="/admin/orders"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-bag-check"></i>
-          Orders
+          <span>Orders</span>
         </NavLink>
 
         <NavLink
           to="/admin/categories"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-tags"></i>
-          Categories
+          <span>Categories</span>
         </NavLink>
 
         <NavLink
           to="/admin/users"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-people"></i>
-          Users
+          <span>Users</span>
         </NavLink>
 
         <NavLink
           to="/admin/coupons"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-ticket-perforated"></i>
-          Coupons
+          <span>Coupons</span>
         </NavLink>
-
 
         <NavLink
           to="/admin/contact"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-chat-dots"></i>
-          Contact Messages
+          <span>Contact Messages</span>
         </NavLink>
-
-
-
 
         <NavLink
           to="/admin/subscribers"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-envelope-paper"></i>
-          Subscribers
+          <span>Subscribers</span>
         </NavLink>
 
         <NavLink
           to="/admin/banners"
           className="nav-link"
+          onClick={closeSidebar}
         >
           <i className="bi bi-images"></i>
-          Banner Management
+          <span>Banner Management</span>
         </NavLink>
 
       </nav>

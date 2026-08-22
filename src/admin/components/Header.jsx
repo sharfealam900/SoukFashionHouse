@@ -1,24 +1,46 @@
 import logo from "../../assets/logo.jpg";
 import { Link } from "react-router-dom";
 
-export default function Header() {
+export default function Header({
+  sidebarOpen,
+  setSidebarOpen,
+}) {
   return (
     <header className="admin-header">
-      <div>
-        <h4 className="mb-0 fw-bold">
-          Admin Dashboard
-        </h4>
+
+      {/* Mobile Menu Button */}
+      <button
+        type="button"
+        className={`mobile-menu-btn ${sidebarOpen ? "menu-open" : ""}`}
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle sidebar"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      {/* Title */}
+      <div className="admin-header-title">
+        <h4>Admin Dashboard</h4>
       </div>
 
-      <div className="d-flex align-items-center gap-3">
-        <span className="fw-semibold">
+      {/* Right Section */}
+      <div className="admin-header-right">
+
+        <span className="admin-welcome">
           Welcome, Admin
         </span>
 
-        <Link to="/" className="logo">
-          <img src={logo} alt="Logo" width={150} />
+        <Link to="/" className="admin-logo-link">
+          <img
+            src={logo}
+            alt="SOUK Logo"
+          />
         </Link>
+
       </div>
+
     </header>
   );
 }

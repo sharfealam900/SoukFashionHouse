@@ -3,202 +3,535 @@ import React, { forwardRef } from "react";
 const PrintInvoice = forwardRef(({ order }, ref) => {
   if (!order) return null;
 
+  const invoiceNumber = order._id
+    ? order._id.slice(-8).toUpperCase()
+    : "";
+
+  const orderDate = order.createdAt
+    ? new Date(order.createdAt).toLocaleDateString("en-IN")
+    : "";
+
   return (
     <div
       ref={ref}
+      className="print-invoice"
       style={{
         width: "210mm",
         minHeight: "297mm",
-        padding: "30px",
-        background: "#fff",
-        color: "#000",
+        boxSizing: "border-box",
+        padding: "15mm",
+        margin: "0",
+        background: "#ffffff",
+        color: "#000000",
+        fontFamily:
+          "Arial, Helvetica, sans-serif",
+        fontSize: "13px",
+        lineHeight: "1.4",
+        overflow: "hidden",
       }}
     >
-      {/* Header */}
+      {/* ================= HEADER ================= */}
 
-      <div className="d-flex justify-content-between mb-4">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "20px",
+          marginBottom: "18px",
+        }}
+      >
+        {/* Company */}
 
-        <div>
-
-          <h2 className="fw-bold">
+        <div
+          style={{
+            flex: "1 1 60%",
+            minWidth: 0,
+          }}
+        >
+          <h2
+            style={{
+              margin: "0 0 5px 0",
+              fontSize: "23px",
+              fontWeight: "700",
+              lineHeight: "1.2",
+            }}
+          >
             SOUK Fashion House
           </h2>
 
-          <small>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#333",
+            }}
+          >
             Delhi, India
-          </small>
-
+          </div>
         </div>
 
-        <div className="text-end">
+        {/* Invoice information */}
 
-          <h4>INVOICE</h4>
+        <div
+          style={{
+            flex: "0 0 35%",
+            textAlign: "right",
+            minWidth: 0,
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 7px 0",
+              fontSize: "18px",
+              fontWeight: "700",
+            }}
+          >
+            INVOICE
+          </h3>
 
-          <div>
-            #{order._id.slice(-8).toUpperCase()}
+          <div
+            style={{
+              fontSize: "12px",
+              marginBottom: "3px",
+            }}
+          >
+            #{invoiceNumber}
           </div>
 
-          <small>
-            {new Date(order.createdAt).toLocaleDateString()}
-          </small>
-
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#444",
+            }}
+          >
+            {orderDate}
+          </div>
         </div>
-
       </div>
 
-      <hr />
+      <div
+        style={{
+          borderTop: "1px solid #222",
+          marginBottom: "18px",
+        }}
+      />
 
-      {/* Customer */}
+      {/* ================= CUSTOMER + PAYMENT ================= */}
 
-      <div className="row mb-4">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "25px",
+          marginBottom: "22px",
+        }}
+      >
+        {/* Customer */}
 
-        <div className="col-6">
-
-          <h6>Bill To</h6>
-
-          <strong>
-            {order.shippingAddress.fullName}
-          </strong>
-
-          <div>{order.shippingAddress.phone}</div>
-
-          <div>{order.shippingAddress.email}</div>
-
-          <div>
-            {order.shippingAddress.address}
+        <div
+          style={{
+            width: "55%",
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: "700",
+              marginBottom: "7px",
+              textTransform: "uppercase",
+            }}
+          >
+            Bill To
           </div>
 
-        </div>
-
-        <div className="col-6 text-end">
+          <div
+            style={{
+              fontWeight: "700",
+              marginBottom: "3px",
+            }}
+          >
+            {order.shippingAddress?.fullName}
+          </div>
 
           <div>
-            Payment :
+            {order.shippingAddress?.phone}
+          </div>
+
+          <div
+            style={{
+              overflowWrap: "anywhere",
+            }}
+          >
+            {order.shippingAddress?.email}
+          </div>
+
+          <div
+            style={{
+              marginTop: "3px",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {order.shippingAddress?.address}
+          </div>
+        </div>
+
+        {/* Payment */}
+
+        <div
+          style={{
+            width: "45%",
+            textAlign: "right",
+            minWidth: 0,
+          }}
+        >
+          <div style={{ marginBottom: "7px" }}>
+            <span>Payment: </span>
+
             <strong>
               {order.paymentMethod}
             </strong>
           </div>
 
           <div>
-            Status :
+            <span>Status: </span>
+
             <strong>
               {order.paymentStatus}
             </strong>
           </div>
-
         </div>
-
       </div>
 
-      {/* Products */}
-
-      <table className="table table-bordered">
-
-        <thead>
-
-          <tr>
-
-            <th>#</th>
-
-            <th>Product</th>
-
-            <th>Size</th>
-
-            <th>Color</th>
-
-            <th>Qty</th>
-
-            <th>Price</th>
-
-            <th>Total</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {order.items.map((item, index) => (
-
-            <tr key={index}>
-
-              <td>{index + 1}</td>
-
-              <td>{item.product.name}</td>
-
-              <td>{item.size || "-"}</td>
-
-              <td>{item.color || "-"}</td>
-
-              <td>{item.quantity}</td>
-
-              <td>₹{item.price}</td>
-
-              <td>
-                ₹{item.price * item.quantity}
-              </td>
-
-            </tr>
-
-          ))}
-
-        </tbody>
-
-      </table>
+      {/* ================= PRODUCTS ================= */}
 
       <div
-        className="ms-auto"
-        style={{ width: 320 }}
+        style={{
+          width: "100%",
+          overflow: "hidden",
+        }}
       >
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+            fontSize: "11.5px",
+          }}
+        >
+          <colgroup>
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "32%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "14.5%" }} />
+            <col style={{ width: "14.5%" }} />
+          </colgroup>
 
-        <div className="d-flex justify-content-between">
+          <thead>
+            <tr>
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "left",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                #
+              </th>
 
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "left",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Product
+              </th>
+
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "center",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Size
+              </th>
+
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "center",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Color
+              </th>
+
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "center",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Qty
+              </th>
+
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "right",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Price
+              </th>
+
+              <th
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px 6px",
+                  textAlign: "right",
+                  background: "#f5f5f5",
+                  fontWeight: "700",
+                }}
+              >
+                Total
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {order.items?.map((item, index) => (
+              <tr key={index}>
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    verticalAlign: "top",
+                  }}
+                >
+                  {index + 1}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    verticalAlign: "top",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {item.product?.name || "-"}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    textAlign: "center",
+                    verticalAlign: "top",
+                  }}
+                >
+                  {item.size || "-"}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    textAlign: "center",
+                    verticalAlign: "top",
+                  }}
+                >
+                  {item.color || "-"}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    textAlign: "center",
+                    verticalAlign: "top",
+                  }}
+                >
+                  {item.quantity}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    textAlign: "right",
+                    verticalAlign: "top",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ₹{Number(item.price || 0).toFixed(2)}
+                </td>
+
+                <td
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "8px 6px",
+                    textAlign: "right",
+                    verticalAlign: "top",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ₹
+                  {(
+                    Number(item.price || 0) *
+                    Number(item.quantity || 0)
+                  ).toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ================= TOTALS ================= */}
+
+      <div
+        style={{
+          width: "290px",
+          maxWidth: "100%",
+          marginLeft: "auto",
+          marginTop: "20px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "5px 0",
+          }}
+        >
           <span>Subtotal</span>
 
           <span>
-            ₹{order.totalAmount}
+            ₹{Number(order.totalAmount || 0).toFixed(2)}
           </span>
-
         </div>
 
-        <div className="d-flex justify-content-between">
-
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "5px 0",
+          }}
+        >
           <span>Discount</span>
 
           <span>
-            -₹{order.discountAmount}
+            -₹
+            {Number(
+              order.discountAmount || 0
+            ).toFixed(2)}
           </span>
-
         </div>
 
-        <hr />
+        <div
+          style={{
+            borderTop: "1px solid #ccc",
+            margin: "8px 0",
+          }}
+        />
 
-        <div className="d-flex justify-content-between">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontWeight: "700",
+            fontSize: "15px",
+          }}
+        >
+          <span>Grand Total</span>
 
-          <h5>Grand Total</h5>
-
-          <h5>
-            ₹{order.finalAmount}
-          </h5>
-
+          <span>
+            ₹{Number(order.finalAmount || 0).toFixed(2)}
+          </span>
         </div>
-
       </div>
 
-      <hr />
+      {/* ================= FOOTER ================= */}
 
-      <div className="text-center mt-5">
-
-        <small>
-
-          Thank you for shopping with
-          <br />
-          SOUK Fashion House
-
-        </small>
-
+      <div
+        style={{
+          borderTop: "1px solid #ccc",
+          marginTop: "35px",
+          paddingTop: "18px",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "#444",
+        }}
+      >
+        Thank you for shopping with
+        <br />
+        <strong>SOUK Fashion House</strong>
       </div>
 
+      {/* ================= PRINT FIX ================= */}
+
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 210mm !important;
+              background: #ffffff !important;
+            }
+
+            .print-invoice {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              max-width: 210mm !important;
+              box-sizing: border-box !important;
+              margin: 0 !important;
+              padding: 15mm !important;
+              overflow: hidden !important;
+            }
+
+            .print-invoice table {
+              width: 100% !important;
+              max-width: 100% !important;
+              table-layout: fixed !important;
+            }
+
+            .print-invoice th,
+            .print-invoice td {
+              box-sizing: border-box !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 });
