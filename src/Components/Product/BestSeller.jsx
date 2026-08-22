@@ -8,6 +8,7 @@ import ProductCard from "./ProductCard";
 
 import "swiper/css";
 import "swiper/css/navigation";
+
 import { Leaf, LockKeyhole, Star } from "lucide-react";
 
 export default function BestSeller() {
@@ -24,8 +25,6 @@ export default function BestSeller() {
         try {
             const { data } = await api.get("/products/best-sellers");
 
-            console.log("Best Seller Products:", data.products);
-
             setProducts(data.products || []);
         } catch (error) {
             console.error(
@@ -37,10 +36,10 @@ export default function BestSeller() {
 
     return (
         <section className="products-section best-seller-section">
-            <div className="container">
+            <div className="container best-seller-container">
 
                 {/* =========================
-                    SECTION HEADER
+                    HEADER
                 ========================= */}
 
                 <div className="premium-section-header">
@@ -51,9 +50,7 @@ export default function BestSeller() {
                             OUR COLLECTION
                         </span>
 
-                        <h2>
-                            Best Sellers
-                        </h2>
+                        <h2>Best Sellers</h2>
 
                         <p>
                             Discover timeless fashion pieces loved by our
@@ -61,63 +58,64 @@ export default function BestSeller() {
                             elegance, comfort, and everyday style.
                         </p>
 
-                         <div className="best-sellers-benefits">
+                        {/* BENEFITS */}
+
+                        <div className="best-sellers-benefits">
 
                             <div className="benefit-item">
+
                                 <div className="benefit-icon">
-                                    <Star size={21} />
+                                    <Star size={20} strokeWidth={1.8} />
                                 </div>
 
-                                <div>
-                                    <strong>
-                                        Top Rated
-                                    </strong>
-
-                                    <span>
-                                        Loved by customers
-                                    </span>
+                                <div className="benefit-content">
+                                    <strong>Top Rated</strong>
+                                    <span>Loved by customers</span>
                                 </div>
+
                             </div>
+
 
                             <div className="benefit-divider" />
 
+
                             <div className="benefit-item">
+
                                 <div className="benefit-icon">
-                                    <Leaf size={21} />
+                                    <Leaf size={20} strokeWidth={1.8} />
                                 </div>
 
-                                <div>
-                                    <strong>
-                                        Premium Quality
-                                    </strong>
-
-                                    <span>
-                                        Finest materials
-                                    </span>
+                                <div className="benefit-content">
+                                    <strong>Premium Quality</strong>
+                                    <span>Finest materials</span>
                                 </div>
+
                             </div>
+
 
                             <div className="benefit-divider" />
 
+
                             <div className="benefit-item">
+
                                 <div className="benefit-icon">
-                                    <LockKeyhole size={21} />
+                                    <LockKeyhole
+                                        size={20}
+                                        strokeWidth={1.8}
+                                    />
                                 </div>
 
-                                <div>
-                                    <strong>
-                                        Secure Shopping
-                                    </strong>
-
-                                    <span>
-                                        Safe & protected
-                                    </span>
+                                <div className="benefit-content">
+                                    <strong>Secure Shopping</strong>
+                                    <span>Safe & protected</span>
                                 </div>
+
                             </div>
 
                         </div>
 
                     </div>
+
 
                     <Link
                         to="/shop"
@@ -136,32 +134,28 @@ export default function BestSeller() {
                 {products.length > 0 && (
                     <div className="best-seller-slider">
 
-                        {/* PREVIOUS BUTTON */}
+                        {/* PREVIOUS */}
 
                         <button
                             ref={prevRef}
                             type="button"
-                            className="slider-btn prev"
+                            className="slider-btn prev best-seller-nav-arrow"
                             aria-label="Previous products"
                         >
                             &#10094;
                         </button>
 
 
-                        {/* SWIPER */}
-
                         <Swiper
                             modules={[Navigation]}
 
-                            spaceBetween={30}
-
-                            slidesPerView={4}
-
-                            slidesPerGroup={1}
+                            className="best-seller-swiper"
 
                             speed={600}
 
-                            loop={products.length > 4}
+                            slidesPerGroup={1}
+
+                            loop={products.length > 5}
 
                             navigation={{
                                 prevEl: prevRef.current,
@@ -196,48 +190,55 @@ export default function BestSeller() {
 
                                 0: {
                                     slidesPerView: 1,
-                                    slidesPerGroup: 1,
-                                    spaceBetween: 16,
+                                    spaceBetween: 14,
                                 },
 
-                                /* Small mobile */
+                                /* Large mobile */
 
                                 480: {
                                     slidesPerView: 1,
-                                    slidesPerGroup: 1,
-                                    spaceBetween: 18,
+                                    spaceBetween: 16,
                                 },
 
                                 /* Tablet */
 
                                 576: {
                                     slidesPerView: 2,
-                                    slidesPerGroup: 1,
-                                    spaceBetween: 20,
+                                    spaceBetween: 18,
                                 },
 
                                 /* Small desktop */
 
                                 768: {
                                     slidesPerView: 3,
-                                    slidesPerGroup: 1,
-                                    spaceBetween: 24,
+                                    spaceBetween: 20,
                                 },
 
                                 /* Desktop */
 
-                                1200: {
+                                992: {
                                     slidesPerView: 4,
-                                    slidesPerGroup: 1,
-                                    spaceBetween: 30,
+                                    spaceBetween: 22,
+                                },
+
+                                /* Large desktop */
+
+                                1200: {
+                                    slidesPerView: 5,
+                                    spaceBetween: 20,
+                                },
+
+                                /* Wide desktop */
+
+                                1400: {
+                                    slidesPerView: 5,
+                                    spaceBetween: 16,
                                 },
                             }}
                         >
 
                             {products.map((product) => (
-                                <SwiperSlide
-                                    key={product._id}
-                                >
+                                <SwiperSlide key={product._id}>
                                     <ProductCard
                                         product={product}
                                         showWishlistButton={true}
@@ -248,12 +249,12 @@ export default function BestSeller() {
                         </Swiper>
 
 
-                        {/* NEXT BUTTON */}
+                        {/* NEXT */}
 
                         <button
                             ref={nextRef}
                             type="button"
-                            className="slider-btn next"
+                            className="slider-btn next best-seller-nav-arrow"
                             aria-label="Next products"
                         >
                             &#10095;

@@ -445,7 +445,7 @@ export default function Navbar() {
                 </NavLink>
 
                 <NavLink
-                  to="/orders"
+                  to="/my-orders"
                   onClick={() => setMobileMenu(false)}
                 >
                   Orders

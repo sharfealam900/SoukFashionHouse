@@ -26,7 +26,6 @@ export default function Home() {
       <Category />
       <BestSeller />
       <NewArrival />
-
       <Story />
       <Instagram />
       <Testimonial />

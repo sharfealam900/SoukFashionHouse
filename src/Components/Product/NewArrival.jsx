@@ -32,7 +32,9 @@ export default function NewArrival() {
         <section className="products-section new-arrival-section">
             <div className="container">
 
-                {/* Section Header */}
+                {/* =========================
+                    SECTION HEADER
+                ========================= */}
 
                 <div className="premium-section-header">
 
@@ -63,65 +65,113 @@ export default function NewArrival() {
 
                 </div>
 
-                {/* Slider */}
 
-                <div className="best-seller-slider">
+                {/* =========================
+                    PRODUCT SLIDER
+                ========================= */}
 
-                    <button
-                        ref={prevRef}
-                        className="slider-btn prev"
-                    >
-                        &#10094;
-                    </button>
+                {products.length > 0 && (
+                    <div className="best-seller-slider">
 
-                    <Swiper
-                        modules={[Navigation]}
-                        navigation={{
-                            prevEl: prevRef.current,
-                            nextEl: nextRef.current,
-                        }}
-                        spaceBetween={30}
-                        slidesPerView={4}
-                        slidesPerGroup={4}
-                        speed={600}
-                        loop={products.length > 4}
-                        breakpoints={{
-                            0: {
-                                slidesPerView: 1,
-                                slidesPerGroup: 1,
-                            },
-                            576: {
-                                slidesPerView: 2,
-                                slidesPerGroup: 2,
-                            },
-                            768: {
-                                slidesPerView: 3,
-                                slidesPerGroup: 3,
-                            },
-                            1200: {
-                                slidesPerView: 4,
-                                slidesPerGroup: 4,
-                            },
-                        }}
-                    >
-                        {products.map((product) => (
-                            <SwiperSlide key={product._id}>
-                                <ProductCard
-                                    product={product}
-                                    showWishlistButton={true}
-                                />
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
+                        {/* PREVIOUS BUTTON */}
 
-                    <button
-                        ref={nextRef}
-                        className="slider-btn next"
-                    >
-                        &#10095;
-                    </button>
+                        <button
+                            ref={prevRef}
+                            type="button"
+                            className="slider-btn prev new-arrival-nav-arrow"
+                            aria-label="Previous products"
+                        >
+                            &#10094;
+                        </button>
 
-                </div>
+
+                        {/* SWIPER */}
+
+                        <Swiper
+                            modules={[Navigation]}
+
+                            navigation={{
+                                prevEl: prevRef.current,
+                                nextEl: nextRef.current,
+                            }}
+
+                            spaceBetween={30}
+
+                            slidesPerView={4}
+
+                            slidesPerGroup={4}
+
+                            speed={600}
+
+                            loop={products.length > 4}
+
+                            breakpoints={{
+
+                                /* Mobile */
+
+                                0: {
+                                    slidesPerView: 1,
+                                    slidesPerGroup: 1,
+                                    spaceBetween: 16,
+                                },
+
+                                /* Small Mobile */
+
+                                480: {
+                                    slidesPerView: 1,
+                                    slidesPerGroup: 1,
+                                    spaceBetween: 18,
+                                },
+
+                                /* Tablet */
+
+                                576: {
+                                    slidesPerView: 2,
+                                    slidesPerGroup: 2,
+                                    spaceBetween: 20,
+                                },
+
+                                /* Small Desktop */
+
+                                768: {
+                                    slidesPerView: 3,
+                                    slidesPerGroup: 3,
+                                    spaceBetween: 24,
+                                },
+
+                                /* Desktop */
+
+                                1200: {
+                                    slidesPerView: 4,
+                                    slidesPerGroup: 4,
+                                    spaceBetween: 30,
+                                },
+                            }}
+                        >
+                            {products.map((product) => (
+                                <SwiperSlide key={product._id}>
+                                    <ProductCard
+                                        product={product}
+                                        showWishlistButton={true}
+                                    />
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
+
+
+                        {/* NEXT BUTTON */}
+
+                        <button
+                            ref={nextRef}
+                            type="button"
+                            className="slider-btn next new-arrival-nav-arrow"
+                            aria-label="Next products"
+                        >
+                            &#10095;
+                        </button>
+
+                    </div>
+                )}
 
             </div>
         </section>
