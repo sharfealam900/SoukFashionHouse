@@ -224,14 +224,14 @@ export default function BestSeller() {
                                 /* Large desktop */
 
                                 1200: {
-                                    slidesPerView: 5,
+                                    slidesPerView: 4,
                                     spaceBetween: 20,
                                 },
 
                                 /* Wide desktop */
 
                                 1400: {
-                                    slidesPerView: 5,
+                                    slidesPerView: 4,
                                     spaceBetween: 16,
                                 },
                             }}

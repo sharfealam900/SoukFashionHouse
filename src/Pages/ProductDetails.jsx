@@ -98,14 +98,7 @@ const ProductDetails = () => {
                 : [];
 
             setProduct(productData);
-           console.log("========== PRODUCT SIZE DEBUG ==========");
-console.log("PRODUCT ID:", id);
-console.log("RAW PRODUCT:", data.product);
-console.log("RAW SIZES:", data.product?.sizes);
-console.log("RAW SIZES LENGTH:", data.product?.sizes?.length);
-console.log("NORMALIZED SIZES:", productData.sizes);
-console.log("NORMALIZED LENGTH:", productData.sizes?.length);
-console.log("========================================");
+
             fetchRelatedProducts(
                 data.product.category._id,
                 data.product._id

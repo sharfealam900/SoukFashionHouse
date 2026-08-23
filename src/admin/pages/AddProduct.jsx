@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { createProduct, deleteProductImage, getCategories, getProduct, updateProduct, } from "../services/adminApi";
 import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+
 
 export default function AddProduct() {
 
@@ -112,7 +114,7 @@ export default function AddProduct() {
 
         } catch (error) {
             console.error("Failed to load product:", error);
-            alert("Failed to load product.");
+            toast.error("Failed to load product.");
         }
     };
 
@@ -131,10 +133,10 @@ export default function AddProduct() {
                 prev.filter((img) => img.public_id !== imageId)
             );
 
-            alert("Image deleted successfully.");
+            toast.success("Image deleted successfully.");
         } catch (error) {
             console.error(error);
-            alert(
+            toast.error(
                 error.response?.data?.message ||
                 "Failed to delete image."
             );
@@ -215,13 +217,23 @@ export default function AddProduct() {
                 response = await createProduct(formData);
             }
 
-            alert(response.data.message);
+            toast.success(
+                response.data.message ||
+                (isEdit
+                    ? "Product updated successfully"
+                    : "Product created successfully")
+            );
 
             navigate("/admin/products");
 
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to create product");
+            toast.error(
+                error.response?.data?.message ||
+                (isEdit
+                    ? "Failed to update product"
+                    : "Failed to create product")
+            );
         } finally {
             setLoading(false);
         }

@@ -24,7 +24,7 @@ export default function CartLoader() {
         const { data } = await getCart();
 
         dispatch(setCart(data.cart));
-        console.log(data.cart.items);
+     
       } catch (error) {
         console.log(error);
       } finally {
