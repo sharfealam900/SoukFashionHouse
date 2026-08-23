@@ -10,13 +10,19 @@ import {
 export default function CartLoader() {
   const dispatch = useDispatch();
 
-  const { isAuthenticated } = useSelector(
+  const { isAuthenticated, loading: authLoading } = useSelector(
     (state) => state.auth
   );
 
   useEffect(() => {
+    if (authLoading) return;
+
     const loadCart = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated) {
+        dispatch(setCart(null));
+        dispatch(setLoading(false));
+        return;
+      }
 
       try {
         dispatch(setLoading(true));
@@ -24,16 +30,16 @@ export default function CartLoader() {
         const { data } = await getCart();
 
         dispatch(setCart(data.cart));
-     
       } catch (error) {
-        console.log(error);
+        console.error("Failed to load cart:", error);
+        dispatch(setCart(null));
       } finally {
         dispatch(setLoading(false));
       }
     };
 
     loadCart();
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, authLoading]);
 
   return null;
 }

@@ -10,15 +10,17 @@ import {
 export default function WishlistLoader() {
   const dispatch = useDispatch();
 
-  const { isAuthenticated } = useSelector(
+  const { isAuthenticated, loading: authLoading } = useSelector(
     (state) => state.auth
   );
 
-  
   useEffect(() => {
+    if (authLoading) return;
+
     const fetchWishlist = async () => {
       if (!isAuthenticated) {
         dispatch(setWishlist([]));
+        dispatch(setLoading(false));
         return;
       }
 
@@ -31,14 +33,15 @@ export default function WishlistLoader() {
           setWishlist(data.wishlist?.products || [])
         );
       } catch (error) {
-        console.error(error);
+        console.error("Failed to load wishlist:", error);
+        dispatch(setWishlist([]));
       } finally {
         dispatch(setLoading(false));
       }
     };
 
     fetchWishlist();
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, authLoading]);
 
   return null;
 }
