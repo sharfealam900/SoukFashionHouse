@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
+import { Truck, CheckCircle2, MapPin, ArrowRight } from "lucide-react";
 
 export default function AddressForm({
   shippingAddress,
@@ -9,6 +10,7 @@ export default function AddressForm({
 }) {
   const { user } = useSelector((state) => state.auth);
 
+  // Load profile address when default address is selected
   useEffect(() => {
     if (user && useProfileAddress) {
       setShippingAddress({
@@ -21,9 +23,11 @@ export default function AddressForm({
   }, [user, useProfileAddress, setShippingAddress]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setShippingAddress((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -50,106 +54,183 @@ export default function AddressForm({
   };
 
   return (
-    <div className="checkout-card">
+    <div className="delivery-address-card">
 
-      <h3 className="checkout-title">
-        Delivery Address
-      </h3>
+      {/* HEADER */}
+      <div className="delivery-address-header">
+        <div className="delivery-header-icon">
+          <Truck size={22} strokeWidth={1.8} />
+        </div>
 
-      {/* Default Address */}
+        <div>
+          <h2>Delivery Address</h2>
+          <p>Where should we deliver your order?</p>
+        </div>
+      </div>
 
-      <div className="border rounded p-3 mb-4">
+      {/* CONTENT */}
+      <div className="delivery-address-content">
 
-        <label className="d-flex align-items-start gap-2">
-
+        {/* DEFAULT ADDRESS */}
+        <label
+          className={`address-option ${
+            useProfileAddress ? "active" : ""
+          }`}
+        >
           <input
             type="radio"
+            name="checkoutAddressType"
             checked={useProfileAddress}
             onChange={handleProfileAddress}
           />
 
-          <div>
+          <span className="custom-radio">
+            {useProfileAddress && <span />}
+          </span>
 
-            <strong>
-              Use My Default Address
-            </strong>
+          <div className="address-option-content">
 
-            <div className="mt-2">
+            <div className="address-option-title">
+              <strong>Use My Default Address</strong>
 
-              <div>{user?.name}</div>
-
-              <div>{user?.phone}</div>
-
-              <div>{user?.email}</div>
-
-              <div style={{ whiteSpace: "pre-line" }}>
-                {user?.address || "No address saved"}
-              </div>
-
+              {useProfileAddress && (
+                <span className="address-selected">
+                  <CheckCircle2 size={14} />
+                  Selected
+                </span>
+              )}
             </div>
 
-          </div>
+            {useProfileAddress && (
+              <div className="default-address-preview">
 
+                {user?.name && (
+                  <strong className="default-name">
+                    {user.name}
+                  </strong>
+                )}
+
+                {user?.phone && (
+                  <span>{user.phone}</span>
+                )}
+
+                {user?.email && (
+                  <span>{user.email}</span>
+                )}
+
+                {user?.address ? (
+                  <span className="default-address">
+                    <MapPin size={14} />
+                    {user.address}
+                  </span>
+                ) : (
+                  <span className="no-address">
+                    No address saved
+                  </span>
+                )}
+
+              </div>
+            )}
+
+          </div>
         </label>
 
-      </div>
-
-      {/* Another Address */}
-
-      <div className="border rounded p-3">
-
-        <label className="d-flex align-items-center gap-2 mb-3">
-
+        {/* ANOTHER ADDRESS */}
+        <label
+          className={`address-option ${
+            !useProfileAddress ? "active" : ""
+          }`}
+        >
           <input
             type="radio"
+            name="checkoutAddressType"
             checked={!useProfileAddress}
             onChange={handleAnotherAddress}
           />
 
-          <strong>
-            Deliver To Another Address
-          </strong>
+          <span className="custom-radio">
+            {!useProfileAddress && <span />}
+          </span>
 
-        </label>
+          <div className="address-option-content">
 
-        {!useProfileAddress && (
-
-          <div className="checkout-form">
-
-            <input
-              type="text"
-              name="fullName"
-              placeholder="Full Name"
-              value={shippingAddress.fullName}
-              onChange={handleChange}
-            />
-
-            <input
-              type="text"
-              name="phone"
-              placeholder="Phone Number"
-              value={shippingAddress.phone}
-              onChange={handleChange}
-            />
-
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={shippingAddress.email}
-              onChange={handleChange}
-            />
-
-            <textarea
-              rows={5}
-              name="address"
-              placeholder="Complete Shipping Address"
-              value={shippingAddress.address}
-              onChange={handleChange}
-            />
+            <div className="address-option-title">
+              <strong>Deliver To Another Address</strong>
+            </div>
 
           </div>
+        </label>
 
+        {/* NEW ADDRESS FORM */}
+        {!useProfileAddress && (
+          <div className="new-address-form">
+
+            {/* FULL NAME */}
+            <div className="address-field">
+              <label>
+                FULL NAME <span>*</span>
+              </label>
+
+              <input
+                type="text"
+                name="fullName"
+                value={shippingAddress?.fullName || ""}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            {/* PHONE */}
+            <div className="address-field">
+              <label>
+                PHONE <span>*</span>
+              </label>
+
+              <input
+                type="tel"
+                name="phone"
+                value={shippingAddress?.phone || ""}
+                onChange={handleChange}
+                placeholder="10-digit mobile number"
+                maxLength={10}
+              />
+            </div>
+
+            {/* EMAIL */}
+            <div className="address-field">
+              <label>
+                EMAIL <span>*</span>
+              </label>
+
+              <input
+                type="email"
+                name="email"
+                value={shippingAddress?.email || ""}
+                onChange={handleChange}
+                placeholder="Enter your email address"
+              />
+            </div>
+
+            {/* ADDRESS */}
+            <div className="address-field">
+              <label>
+                DELIVERY ADDRESS <span>*</span>
+              </label>
+
+              <div className="address-input-wrapper">
+                <MapPin size={18} />
+
+                <textarea
+                  name="address"
+                  value={shippingAddress?.address || ""}
+                  onChange={handleChange}
+                  placeholder="House no., street, area, landmark..."
+                  rows={4}
+                />
+              </div>
+            </div>
+
+          </div>
         )}
 
       </div>

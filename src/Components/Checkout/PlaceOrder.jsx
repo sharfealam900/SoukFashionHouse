@@ -153,10 +153,7 @@ export default function PlaceOrder({
     const razorpayKey =
       import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-    console.log(
-      "Razorpay frontend key:",
-      razorpayKey
-    );
+
 
     if (!razorpayKey) {
       throw new Error(
@@ -200,10 +197,7 @@ export default function PlaceOrder({
         couponCode,
       });
 
-    console.log(
-      "Razorpay backend response:",
-      razorpayData
-    );
+
 
     // ---------------------------------------------------
     // Validate backend response
@@ -281,10 +275,7 @@ export default function PlaceOrder({
         try {
           setLoading(true);
 
-          console.log(
-            "Razorpay payment response:",
-            response
-          );
+
 
           // ---------------------------------------------
           // Verify payment on backend
@@ -307,10 +298,7 @@ export default function PlaceOrder({
               couponCode,
             });
 
-          console.log(
-            "Payment verification response:",
-            verificationResponse
-          );
+
 
           // ---------------------------------------------
           // Check verification result

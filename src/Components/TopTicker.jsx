@@ -1,32 +1,30 @@
-
+import React from "react";
 
 export default function TopTicker() {
+    const items = [
+        "ELEGANT ESSENTIALS",
+        "TIMELESS CRAFT",
+        "QUALITY FABRICS",
+        "HANDPICKED COLLECTION",
+        "MODERN MODESTY",
+        "EFFORTLESS STYLE",
+    ];
+
     return (
-        <section className="top-ticker">
-            <div className="ticker">
-                <div className="ticker-track">
+        <div className="luxury-ticker">
+            <div className="luxury-ticker-track">
+                {[...items, ...items].map((item, index) => (
+                    <React.Fragment key={`${item}-${index}`}>
+                        <span className="luxury-ticker-item">
+                            {item}
+                        </span>
 
-                    {[...Array(2)].map((_, i) => (
-                        <div className="ticker-group" key={i}>
-                            <span>Elegant</span>
-                            <span>✦</span>
-
-                            <span>Timeless</span>
-                            <span>✦</span>
-
-                            <span>Quality Fashion</span>
-                            <span>✦</span>
-
-                            <span>Handpicked Fabric</span>
-                            <span>✦</span>
-
-                            <span>Trendy</span>
-                            <span>✦</span>
-                        </div>
-                    ))}
-
-                </div>
+                        <span className="luxury-ticker-separator">
+                            ◆
+                        </span>
+                    </React.Fragment>
+                ))}
             </div>
-        </section>
+        </div>
     );
 }

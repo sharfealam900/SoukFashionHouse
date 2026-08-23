@@ -1,7 +1,5 @@
 import React from 'react'
 import Navbar from '../Components/Navbar'
-// import Hero from '../Components/Hero'
-
 import Story from '../Components/Story'
 import Instagram from '../Components/Instagrams/Instagram'
 import Testimonial from '../Components/Testimonial'
