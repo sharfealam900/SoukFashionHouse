@@ -5,8 +5,9 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import SEO from "../Components/SEO";
+import { getProducts } from "../features/product/productApi";
 
-import { getProducts } from "../services/productApi";
+
 
 export default function Shop() {
     const [products, setProducts] = useState([]);
