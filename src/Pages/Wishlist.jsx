@@ -19,6 +19,7 @@ import {
 } from "../features/cart/cartApi";
 
 import { setCart } from "../features/cart/cartSlice";
+import SEO from "../Components/SEO";
 
 export default function Wishlist() {
   const dispatch = useDispatch();
@@ -50,7 +51,7 @@ export default function Wishlist() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to remove item"
+        "Unable to remove item"
       );
     }
   };
@@ -98,7 +99,7 @@ export default function Wishlist() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to move product"
+        "Unable to move product"
       );
     } finally {
       setMovingToCart(false);
@@ -153,7 +154,7 @@ export default function Wishlist() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to move product"
+        "Unable to move product"
       );
     } finally {
       setMovingToCart(false);
@@ -172,6 +173,11 @@ export default function Wishlist() {
 
   return (
     <>
+
+      <SEO
+        title="Wishlist | Souk Fashion House"
+        noIndex
+      />
       <Navbar />
 
       <section className="container py-5">
@@ -223,9 +229,9 @@ export default function Wishlist() {
                */
               const hasAvailableSize = hasSizes
                 ? product.sizes.some(
-                    (item) =>
-                      Number(item.stock || 0) > 0
-                  )
+                  (item) =>
+                    Number(item.stock || 0) > 0
+                )
                 : Number(product.stock || 0) > 0;
 
               return (
@@ -358,8 +364,8 @@ export default function Wishlist() {
                         {!hasAvailableSize
                           ? "Out of Stock"
                           : hasSizes
-                          ? "Select Size"
-                          : "Move to Cart"}
+                            ? "Select Size"
+                            : "Move to Cart"}
                       </button>
 
                       {/* Remove */}
@@ -527,9 +533,9 @@ export default function Wishlist() {
                     ) *
                       Number(
                         selectedProduct.discount ||
-                          0
+                        0
                       )) /
-                      100
+                    100
                   ).toFixed(0)}
                 </div>
 
@@ -596,13 +602,13 @@ export default function Wishlist() {
                           background: !available
                             ? "#f1f1f1"
                             : selected
-                            ? "#212529"
-                            : "#fff",
+                              ? "#212529"
+                              : "#fff",
                           color: !available
                             ? "#999"
                             : selected
-                            ? "#fff"
-                            : "#212529",
+                              ? "#fff"
+                              : "#212529",
                           fontWeight: "600",
                           cursor: available
                             ? "pointer"

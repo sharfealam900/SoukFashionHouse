@@ -11,6 +11,7 @@ import { toast } from "react-hot-toast";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import { changePassword } from "../features/auth/authApi";
+import SEO from "../Components/SEO";
 
 export default function ChangePassword() {
     const navigate = useNavigate();
@@ -117,6 +118,11 @@ export default function ChangePassword() {
 
     return (
         <>
+
+            <SEO
+                title="ChangePassword | Souk Fashion House"
+                noIndex
+            />
             <Navbar />
 
             <section className="profile-page">

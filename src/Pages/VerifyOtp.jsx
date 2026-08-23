@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 
 import { setUser } from "../features/auth/authSlice";
 import api from "../api/axios";
+import SEO from "../Components/SEO";
 
 
 export default function VerifyOtp() {
@@ -165,6 +166,11 @@ export default function VerifyOtp() {
                 <h2 className="text-center mb-3">
                     Verify Email
                 </h2>
+
+                <SEO
+                    title="VerifyOtp | Souk Fashion House"
+                    noIndex
+                />
 
                 <p className="text-center text-muted">
                     Enter the OTP sent to

@@ -20,6 +20,7 @@ import {
 } from "../features/cart/cartSlice";
 
 import { toast } from "react-hot-toast";
+import SEO from "../Components/SEO";
 
 export default function Cart() {
   const { items, cart } = useSelector((state) => state.cart);
@@ -368,6 +369,10 @@ export default function Cart() {
 
   return (
     <>
+    <SEO
+    title="Shopping Cart | Souk Fashion House"
+    noIndex
+/>
       <Navbar />
 
       <section className="cart-page container py-5">

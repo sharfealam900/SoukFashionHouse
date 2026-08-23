@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import SEO from "../Components/SEO";
 
 
 export default function ResetPassword() {
@@ -48,6 +49,11 @@ export default function ResetPassword() {
         <h2 className="mb-4 text-center">
           Reset Password
         </h2>
+
+        <SEO
+    title="ResetPassword | Souk Fashion House"
+    noIndex
+/>
 
         <input
           type="password"

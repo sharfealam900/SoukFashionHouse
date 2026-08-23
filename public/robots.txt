@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+Disallow: /login
+Disallow: /register
+Disallow: /verify-otp
+Disallow: /forgot-password
+Disallow: /verify-reset-otp
+Disallow: /reset-password
+
+Disallow: /cart
+Disallow: /checkout
+Disallow: /wishlist
+Disallow: /profile
+Disallow: /change-password
+Disallow: /my-orders
+Disallow: /orders/
+Disallow: /order-success
+
+Disallow: /admin/
+
+Sitemap: https://www.soukfashionhouse.com/sitemap.xml

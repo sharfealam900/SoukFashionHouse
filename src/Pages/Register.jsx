@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 
 import { registerUser } from "../features/auth/authApi";
 import { setLoading, setUser } from "../features/auth/authSlice";
+import SEO from "../Components/SEO";
 
 export default function Register() {
     const dispatch = useDispatch();
@@ -126,6 +127,12 @@ export default function Register() {
                             required
                         />
                     </div>
+
+
+                    <SEO
+                        title="Register | Souk Fashion House"
+                        noIndex
+                    />
 
 
                     <div className="mb-4">

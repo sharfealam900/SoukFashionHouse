@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 
 import { loginUser } from "../features/auth/authApi";
 import { setLoading, setUser } from "../features/auth/authSlice";
+import SEO from "../Components/SEO";
 
 export default function Login() {
     const dispatch = useDispatch();
@@ -47,6 +48,7 @@ export default function Login() {
     };
 
     return (
+
         <section className="container py-5">
             <div
                 className="mx-auto shadow p-4 rounded bg-white"
@@ -82,6 +84,11 @@ export default function Login() {
                             required
                         />
                     </div>
+
+                    <SEO
+                        title="Login | Souk Fashion House"
+                        noIndex
+                    />
 
 
                     <div className="text-end mb-3">

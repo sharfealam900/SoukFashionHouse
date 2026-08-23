@@ -1,616 +1,597 @@
-import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
-import api from "../api/axios";
-import ProductCard from "../Components/Product/ProductCard";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
+import SEO from "../Components/SEO";
+
+import { getProducts } from "../services/productApi";
 
 export default function Shop() {
     const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    const [searchParams] = useSearchParams();
+    const [search, setSearch] = useState("");
+    const [category, setCategory] = useState("all");
+    const [sort, setSort] = useState("featured");
 
-    const [selectedCategory, setSelectedCategory] =
-        useState("All");
-
-    const [price, setPrice] = useState(100000);
-
-    const [sortBy, setSortBy] =
-        useState("newest");
-
-    const [currentPage, setCurrentPage] =
-        useState(1);
-
-    const [search, setSearch] = useState(
-        searchParams.get("search") || ""
-    );
-
-    const productsPerPage = 9;
-
-
-    /* =====================================================
-       UPDATE SEARCH FROM URL
-    ===================================================== */
+    const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
-        setSearch(
-            searchParams.get("search") || ""
-        );
-    }, [searchParams]);
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError("");
 
+                const { data } = await getProducts();
 
-    /* =====================================================
-       GET PRODUCTS
-    ===================================================== */
+                setProducts(data?.products || []);
+            } catch (err) {
+                console.error("Shop Products Error:", err);
 
-    useEffect(() => {
-        getProducts();
+                setError(
+                    err?.response?.data?.message ||
+                    "Unable to load products."
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
     }, []);
 
+    const categories = useMemo(() => {
+        const categoryMap = new Map();
 
-    const getProducts = async () => {
-        try {
-            const { data } =
-                await api.get("/products");
+        products.forEach((product) => {
+            const productCategory = product?.category;
 
-            setProducts(
-                Array.isArray(data?.products)
-                    ? data.products
-                    : []
-            );
+            if (!productCategory) return;
 
-        } catch (error) {
-            console.error(
-                "Failed to load products:",
-                error
-            );
+            const id =
+                productCategory?._id ||
+                productCategory?.id ||
+                productCategory?.name;
 
-            setProducts([]);
-        }
-    };
+            const name =
+                productCategory?.name ||
+                "Uncategorized";
 
-
-    /* =====================================================
-       RESET PAGE WHEN FILTER CHANGES
-    ===================================================== */
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [
-        search,
-        selectedCategory,
-        price,
-        sortBy,
-    ]);
-
-
-    /* =====================================================
-       CATEGORIES
-    ===================================================== */
-
-    const categories = [
-        "All",
-        ...new Set(
-            products
-                .map(
-                    (product) =>
-                        product.category?.name
-                )
-                .filter(Boolean)
-        ),
-    ];
-
-
-    /* =====================================================
-       FILTER PRODUCTS
-    ===================================================== */
-
-    const filteredProducts = products
-        .filter((product) => {
-
-            const productName =
-                product.name
-                    ?.toLowerCase() || "";
-
-            const categoryName =
-                product.category?.name
-                    ?.toLowerCase() || "";
-
-            const searchValue =
-                search
-                    .toLowerCase()
-                    .trim();
-
-
-            /* SEARCH */
-
-            const matchesSearch =
-                productName.includes(
-                    searchValue
-                ) ||
-                categoryName.includes(
-                    searchValue
-                );
-
-
-            /* CATEGORY */
-
-            const matchesCategory =
-                selectedCategory === "All" ||
-                product.category?.name ===
-                    selectedCategory;
-
-
-            /* PRICE */
-
-            const productPrice =
-                Number(product.price) || 0;
-
-            const matchesPrice =
-                productPrice <= price;
-
-
-            return (
-                matchesSearch &&
-                matchesCategory &&
-                matchesPrice
-            );
-        })
-
-
-        /* =================================================
-           SORT
-        ================================================= */
-
-        .sort((a, b) => {
-
-            switch (sortBy) {
-
-                case "priceLow":
-                    return (
-                        Number(a.price || 0) -
-                        Number(b.price || 0)
-                    );
-
-
-                case "priceHigh":
-                    return (
-                        Number(b.price || 0) -
-                        Number(a.price || 0)
-                    );
-
-
-                case "name":
-                    return (
-                        a.name || ""
-                    ).localeCompare(
-                        b.name || ""
-                    );
-
-
-                case "newest":
-                default:
-                    return (
-                        new Date(
-                            b.createdAt || 0
-                        ) -
-                        new Date(
-                            a.createdAt || 0
-                        )
-                    );
+            if (id && !categoryMap.has(id)) {
+                categoryMap.set(id, {
+                    id,
+                    name,
+                });
             }
         });
 
+        return Array.from(categoryMap.values());
+    }, [products]);
 
-    /* =====================================================
-       PAGINATION
-    ===================================================== */
+    const filteredProducts = useMemo(() => {
+        let result = [...products];
 
-    const totalPages =
-        Math.ceil(
-            filteredProducts.length /
-                productsPerPage
-        );
+        const searchValue = search.trim().toLowerCase();
 
+        if (searchValue) {
+            result = result.filter((product) => {
+                const name =
+                    product?.name?.toLowerCase() || "";
 
-    const startIndex =
-        (currentPage - 1) *
-        productsPerPage;
+                const description =
+                    product?.description?.toLowerCase() || "";
 
+                const categoryName =
+                    product?.category?.name?.toLowerCase() || "";
 
-    const endIndex =
-        startIndex +
-        productsPerPage;
-
-
-    const currentProducts =
-        filteredProducts.slice(
-            startIndex,
-            endIndex
-        );
-
-
-    /* =====================================================
-       PAGE CHANGE
-    ===================================================== */
-
-    const goToPage = (page) => {
-
-        if (totalPages === 0) {
-            return;
+                return (
+                    name.includes(searchValue) ||
+                    description.includes(searchValue) ||
+                    categoryName.includes(searchValue)
+                );
+            });
         }
 
+        if (category !== "all") {
+            result = result.filter((product) => {
+                const productCategory = product?.category;
 
-        if (
-            page < 1 ||
-            page > totalPages
-        ) {
-            return;
+                const categoryId =
+                    productCategory?._id ||
+                    productCategory?.id ||
+                    productCategory?.name;
+
+                return String(categoryId) === String(category);
+            });
         }
 
+        switch (sort) {
+            case "price-low":
+                result.sort(
+                    (a, b) =>
+                        Number(a?.price || 0) -
+                        Number(b?.price || 0)
+                );
+                break;
 
-        setCurrentPage(page);
+            case "price-high":
+                result.sort(
+                    (a, b) =>
+                        Number(b?.price || 0) -
+                        Number(a?.price || 0)
+                );
+                break;
 
+            case "newest":
+                result.sort((a, b) => {
+                    const dateA = new Date(
+                        a?.createdAt || 0
+                    ).getTime();
 
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        });
+                    const dateB = new Date(
+                        b?.createdAt || 0
+                    ).getTime();
+
+                    return dateB - dateA;
+                });
+                break;
+
+            case "featured":
+            default:
+                break;
+        }
+
+        return result;
+    }, [products, search, category, sort]);
+
+    const getProductPrice = (product) => {
+        const price = Number(product?.price || 0);
+        const discount = Number(product?.discount || 0);
+
+        if (discount <= 0) {
+            return price;
+        }
+
+        return price - (price * discount) / 100;
     };
 
+    const getProductImage = (product) => {
+        if (!product?.images?.length) {
+            return "/logo.jpg";
+        }
+
+        const firstImage = product.images[0];
+
+        if (typeof firstImage === "string") {
+            return firstImage;
+        }
+
+        return (
+            firstImage?.url ||
+            firstImage?.secure_url ||
+            "/logo.jpg"
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch("");
+        setCategory("all");
+        setSort("featured");
+    };
+
+    const hasActiveFilters =
+        search.trim() !== "" ||
+        category !== "all" ||
+        sort !== "featured";
 
     return (
         <>
-            {/* =================================================
-                NAVBAR
-            ================================================= */}
+            <SEO
+                title="Shop | Souk Fashion House"
+                description="Shop elegant fashion, modern modest wear, kurtis, shawls, dupattas and handcrafted styles from Souk Fashion House."
+                keywords="shop fashion, women's fashion, modest fashion, kurtis, shawls, dupattas, ethnic wear, Souk Fashion House"
+                url="/shop"
+            />
 
             <Navbar />
 
+            <main className="shop-page">
 
-            {/* =================================================
-                SHOP SECTION
-            ================================================= */}
+                {/* HERO */}
 
-            <section className="products-section shop-page">
+                <section className="shop-hero">
 
-                <div className="container">
+                    <div className="shop-hero-content">
 
+                        <span className="shop-eyebrow">
+                            SOUK COLLECTION
+                        </span>
 
-                    {/* =================================================
-                        TITLE
-                    ================================================= */}
-
-                    <div className="section-title shop-section-title">
-
-                        <h2>
-                            This Week's Bestsellers
-                        </h2>
+                        <h1>
+                            Discover Your
+                            <span> Signature Style</span>
+                        </h1>
 
                         <p>
-                            The most loved pieces
-                            from our latest
-                            collection.
+                            Explore our curated collection of
+                            elegant fashion, timeless fabrics
+                            and modern modest silhouettes.
                         </p>
 
                     </div>
 
+                </section>
 
-                    {/* =================================================
-                        SHOP LAYOUT
-                    ================================================= */}
+                {/* SHOP CONTENT */}
 
-                    <div className="shop-layout">
+                <section className="shop-container">
 
+                    {/* TOP BAR */}
 
-                        {/* =================================================
-                            FILTER SIDEBAR
-                        ================================================= */}
+                    <div className="shop-topbar">
 
-                        <aside className="filter-sidebar">
+                        <div>
+                            <span className="shop-result-label">
+                                OUR COLLECTION
+                            </span>
 
+                            <h2>
+                                Shop All
+                            </h2>
 
-                            {/* SEARCH */}
+                            {!loading && (
+                                <p>
+                                    {filteredProducts.length}{" "}
+                                    {filteredProducts.length === 1
+                                        ? "product"
+                                        : "products"}
+                                </p>
+                            )}
+                        </div>
 
-                            <div className="search-wrapper">
+                        <button
+                            type="button"
+                            className="shop-filter-toggle"
+                            onClick={() =>
+                                setShowFilters(
+                                    !showFilters
+                                )
+                            }
+                        >
+                            <SlidersHorizontal size={18} />
 
-                                <input
-                                    type="text"
-                                    placeholder="Search products..."
-                                    value={search}
-                                    onChange={(e) =>
-                                        setSearch(
-                                            e.target.value
-                                        )
+                            <span>
+                                Filters
+                            </span>
+                        </button>
+
+                    </div>
+
+                    {/* FILTER BAR */}
+
+                    <div
+                        className={`shop-filters ${
+                            showFilters
+                                ? "shop-filters-open"
+                                : ""
+                        }`}
+                    >
+
+                        {/* SEARCH */}
+
+                        <div className="shop-search">
+
+                            <Search size={18} />
+
+                            <input
+                                type="search"
+                                placeholder="Search products..."
+                                value={search}
+                                onChange={(e) =>
+                                    setSearch(
+                                        e.target.value
+                                    )
+                                }
+                            />
+
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSearch("")
                                     }
-                                    className="product-search"
-                                />
-
-                            </div>
-
-
-                            {/* CATEGORY */}
-
-                            <div className="filter-block">
-
-                                <h4>
-                                    Categories
-                                </h4>
-
-
-                                <div className="category-filter">
-
-                                    {categories.map(
-                                        (category) => (
-
-                                            <button
-                                                key={
-                                                    category
-                                                }
-                                                type="button"
-                                                className={`category-btn ${
-                                                    selectedCategory ===
-                                                    category
-                                                        ? "active"
-                                                        : ""
-                                                }`}
-                                                onClick={() =>
-                                                    setSelectedCategory(
-                                                        category
-                                                    )
-                                                }
-                                            >
-                                                {category}
-                                            </button>
-
-                                        )
-                                    )}
-
-                                </div>
-
-                            </div>
-
-
-                            {/* PRICE */}
-
-                            <div className="filter-block">
-
-                                <div className="price-header">
-
-                                    <h4>
-                                        Price
-                                    </h4>
-
-                                    <span>
-                                        ₹
-                                        {price.toLocaleString(
-                                            "en-IN"
-                                        )}
-                                    </span>
-
-                                </div>
-
-
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100000"
-                                    step="100"
-                                    value={price}
-                                    onChange={(e) =>
-                                        setPrice(
-                                            Number(
-                                                e.target.value
-                                            )
-                                        )
-                                    }
-                                />
-
-                            </div>
-
-
-                            {/* SORT */}
-
-                            <div className="filter-block">
-
-                                <h4>
-                                    Sort By
-                                </h4>
-
-
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) =>
-                                        setSortBy(
-                                            e.target.value
-                                        )
-                                    }
-                                    className="sort-select"
+                                    aria-label="Clear search"
                                 >
+                                    <X size={16} />
+                                </button>
+                            )}
 
-                                    <option value="newest">
-                                        Newest
-                                    </option>
+                        </div>
 
-                                    <option value="priceLow">
-                                        Price: Low → High
-                                    </option>
+                        {/* CATEGORY */}
 
-                                    <option value="priceHigh">
-                                        Price: High → Low
-                                    </option>
+                        <div className="shop-category-filter">
 
-                                    <option value="name">
-                                        Name (A–Z)
-                                    </option>
+                            <select
+                                value={category}
+                                onChange={(e) =>
+                                    setCategory(
+                                        e.target.value
+                                    )
+                                }
+                            >
+                                <option value="all">
+                                    All Categories
+                                </option>
 
-                                </select>
+                                {categories.map(
+                                    (item) => (
+                                        <option
+                                            key={item.id}
+                                            value={item.id}
+                                        >
+                                            {item.name}
+                                        </option>
+                                    )
+                                )}
+                            </select>
 
-                            </div>
+                        </div>
 
-                        </aside>
+                        {/* SORT */}
 
+                        <div className="shop-sort">
 
-                        {/* =================================================
-                            PRODUCTS
-                        ================================================= */}
+                            <select
+                                value={sort}
+                                onChange={(e) =>
+                                    setSort(
+                                        e.target.value
+                                    )
+                                }
+                            >
+                                <option value="featured">
+                                    Featured
+                                </option>
 
-                        <div className="products-content">
+                                <option value="newest">
+                                    Newest
+                                </option>
 
+                                <option value="price-low">
+                                    Price: Low to High
+                                </option>
 
-                            {currentProducts.length >
-                            0 ? (
+                                <option value="price-high">
+                                    Price: High to Low
+                                </option>
+                            </select>
 
-                                <div className="shop-products-grid">
+                        </div>
 
-                                    {currentProducts.map(
-                                        (product) => (
+                        {hasActiveFilters && (
+                            <button
+                                type="button"
+                                className="shop-clear-filter"
+                                onClick={clearFilters}
+                            >
+                                Clear All
+                            </button>
+                        )}
 
-                                            <div
-                                                className="shop-product-item"
+                    </div>
+
+                    {/* ERROR */}
+
+                    {error && (
+                        <div className="shop-error">
+                            <p>{error}</p>
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    window.location.reload()
+                                }
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    )}
+
+                    {/* LOADING */}
+
+                    {loading && (
+                        <div className="shop-product-grid">
+
+                            {Array.from({
+                                length: 8,
+                            }).map((_, index) => (
+                                <div
+                                    className="shop-skeleton-card"
+                                    key={index}
+                                >
+                                    <div className="shop-skeleton-image"></div>
+
+                                    <div className="shop-skeleton-line"></div>
+
+                                    <div className="shop-skeleton-small"></div>
+
+                                    <div className="shop-skeleton-price"></div>
+                                </div>
+                            ))}
+
+                        </div>
+                    )}
+
+                    {/* PRODUCTS */}
+
+                    {!loading &&
+                        !error &&
+                        filteredProducts.length > 0 && (
+                            <div className="shop-product-grid">
+
+                                {filteredProducts.map(
+                                    (product) => {
+                                        const finalPrice =
+                                            getProductPrice(
+                                                product
+                                            );
+
+                                        const originalPrice =
+                                            Number(
+                                                product?.price ||
+                                                    0
+                                            );
+
+                                        const discount =
+                                            Number(
+                                                product?.discount ||
+                                                    0
+                                            );
+
+                                        return (
+                                            <Link
                                                 key={
                                                     product._id
                                                 }
+                                                to={`/products/${product.slug}`}
+                                                className="shop-product-card"
                                             >
 
-                                                <ProductCard
-                                                    product={
-                                                        product
-                                                    }
-                                                />
+                                                {/* IMAGE */}
 
-                                            </div>
+                                                <div className="shop-product-image">
 
-                                        )
-                                    )}
+                                                    <img
+                                                        src={getProductImage(
+                                                            product
+                                                        )}
+                                                        alt={
+                                                            product?.name ||
+                                                            "Fashion product"
+                                                        }
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                    />
 
-                                </div>
+                                                    {discount >
+                                                        0 && (
+                                                        <span className="shop-discount-badge">
+                                                            -
+                                                            {
+                                                                discount
+                                                            }
+                                                            %
+                                                        </span>
+                                                    )}
 
-                            ) : (
+                                                    {product?.stock <=
+                                                        0 && (
+                                                        <span className="shop-stock-badge">
+                                                            OUT OF STOCK
+                                                        </span>
+                                                    )}
 
-                                <div className="shop-no-products">
+                                                </div>
 
-                                    <h4>
-                                        No products found.
-                                    </h4>
+                                                {/* INFO */}
 
-                                    <p>
-                                        Try changing your
-                                        search or filters.
-                                    </p>
+                                                <div className="shop-product-info">
 
-                                </div>
+                                                    <span className="shop-product-category">
+                                                        {
+                                                            product
+                                                                ?.category
+                                                                ?.name
+                                                        }
+                                                    </span>
 
-                            )}
+                                                    <h3>
+                                                        {
+                                                            product?.name
+                                                        }
+                                                    </h3>
 
+                                                    <div className="shop-product-price">
 
-                            {/* =================================================
-                                PAGINATION
+                                                        <strong>
+                                                            ₹
+                                                            {finalPrice.toLocaleString(
+                                                                "en-IN"
+                                                            )}
+                                                        </strong>
 
-                                IMPORTANT:
-                                This is ALWAYS rendered.
-                            ================================================= */}
+                                                        {discount >
+                                                            0 && (
+                                                            <span>
+                                                                ₹
+                                                                {originalPrice.toLocaleString(
+                                                                    "en-IN"
+                                                                )}
+                                                            </span>
+                                                        )}
 
-                            <div className="pagination">
+                                                    </div>
 
-                                {/* PREVIOUS */}
+                                                    <div className="shop-product-view">
+                                                        <span>
+                                                            View
+                                                            Product
+                                                        </span>
 
-                                <button
-                                    type="button"
-                                    disabled={
-                                        currentPage ===
-                                        1 ||
-                                        totalPages ===
-                                        0
-                                    }
-                                    onClick={() =>
-                                        goToPage(
-                                            currentPage -
-                                                1
-                                        )
-                                    }
-                                >
-                                    Previous
-                                </button>
+                                                        <span>
+                                                            →
+                                                        </span>
+                                                    </div>
 
+                                                </div>
 
-                                {/* PAGE NUMBERS */}
-
-                                {Array.from(
-                                    {
-                                        length:
-                                            Math.max(
-                                                totalPages,
-                                                1
-                                            ),
-                                    },
-                                    (_, index) => {
-
-                                        const pageNumber =
-                                            index + 1;
-
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={
-                                                    pageNumber
-                                                }
-                                                className={
-                                                    currentPage ===
-                                                    pageNumber
-                                                        ? "active"
-                                                        : ""
-                                                }
-                                                onClick={() =>
-                                                    goToPage(
-                                                        pageNumber
-                                                    )
-                                                }
-                                            >
-                                                {
-                                                    pageNumber
-                                                }
-                                            </button>
+                                            </Link>
                                         );
                                     }
                                 )}
 
+                            </div>
+                        )}
 
-                                {/* NEXT */}
+                    {/* EMPTY */}
+
+                    {!loading &&
+                        !error &&
+                        filteredProducts.length ===
+                            0 && (
+                            <div className="shop-empty">
+
+                                <div className="shop-empty-icon">
+                                    <Search size={28} />
+                                </div>
+
+                                <h3>
+                                    No products found
+                                </h3>
+
+                                <p>
+                                    Try changing your search
+                                    or filters to discover
+                                    something new.
+                                </p>
 
                                 <button
                                     type="button"
-                                    disabled={
-                                        totalPages ===
-                                            0 ||
-                                        currentPage ===
-                                            totalPages
-                                    }
-                                    onClick={() =>
-                                        goToPage(
-                                            currentPage +
-                                                1
-                                        )
-                                    }
+                                    onClick={clearFilters}
                                 >
-                                    Next
+                                    View All Products
                                 </button>
 
                             </div>
+                        )}
 
-                        </div>
+                </section>
 
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            {/* =================================================
-                FOOTER
-            ================================================= */}
+            </main>
 
             <Footer />
         </>

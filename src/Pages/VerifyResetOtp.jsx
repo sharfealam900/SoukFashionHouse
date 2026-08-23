@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import SEO from "../Components/SEO";
 
 
 export default function VerifyResetOtp() {
@@ -132,6 +133,11 @@ export default function VerifyResetOtp() {
           </button>
 
         </form>
+
+        <SEO
+          title="VerifyResetOtp | Souk Fashion House"
+          noIndex
+        />
 
         <div className="auth-footer">
 

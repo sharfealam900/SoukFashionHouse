@@ -3,10 +3,15 @@ import { Link } from "react-router-dom";
 
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
+import SEO from "../Components/SEO";
 
 export default function OrderSuccess() {
   return (
     <>
+      <SEO
+        title="OrderSuccess | Souk Fashion House"
+        noIndex
+      />
       <Navbar />
 
       <section className="container py-5 text-center">

@@ -4,7 +4,7 @@ import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import slugify from "slugify";
 import cloudinary from "../config/cloudinary.js";
 import Cart from "../models/cart.model.js";
-
+import mongoose from "mongoose";
 
 
 const parseProductSizes = (sizes) => {
@@ -118,13 +118,7 @@ export const createProduct = async (req, res) => {
           item.stock >= 0
       );
 
-    console.log("==================================");
-    console.log("RAW SIZES:", sizes);
-    console.log("FINAL SIZES:", parsedSizes);
-    console.log("IS ARRAY:", Array.isArray(parsedSizes));
-    console.log("FIRST ITEM:", parsedSizes[0]);
-    console.log("FIRST ITEM TYPE:", typeof parsedSizes[0]);
-    console.log("==================================");
+
 
     // ==========================================
     // CHECK CATEGORY
@@ -250,11 +244,27 @@ export const getProducts = async (req, res) => {
 
 
 
-
 export const getProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate("category", "name slug");
+    const { id } = req.params;
+
+    let product;
+
+    // If the parameter is a valid MongoDB ObjectId,
+    // first search by _id.
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      product = await Product.findById(id).populate(
+        "category",
+        "name slug"
+      );
+    }
+
+    // Otherwise search using the SEO slug.
+    if (!product) {
+      product = await Product.findOne({
+        slug: id,
+      }).populate("category", "name slug");
+    }
 
     if (!product) {
       return res.status(404).json({
@@ -263,20 +273,19 @@ export const getProduct = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       product,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("GET PRODUCT ERROR:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
-
-
 
 export const updateProduct = async (req, res) => {
   try {

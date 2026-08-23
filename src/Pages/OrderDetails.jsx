@@ -4,10 +4,11 @@ import { useParams } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
-import {getOrderDetails,cancelOrder,} from "../features/order/orderApi";
+import { getOrderDetails, cancelOrder, } from "../features/order/orderApi";
 
 import { toast } from "react-hot-toast";
 import OrderTracking from "../Components/OrderTracking";
+import SEO from "../Components/SEO";
 
 
 export default function OrderDetails() {
@@ -70,6 +71,11 @@ export default function OrderDetails() {
 
   return (
     <>
+
+      <SEO
+        title="OrderDetails | Souk Fashion House"
+        noIndex
+      />
       <Navbar />
 
       <section className="container py-5">
@@ -87,12 +93,12 @@ export default function OrderDetails() {
 
             <span
               className={`badge ${order.orderStatus === "Delivered"
-                  ? "bg-success"
-                  : order.orderStatus === "Cancelled"
-                    ? "bg-danger"
-                    : order.orderStatus === "Out for Delivery"
-                      ? "bg-primary"
-                      : "bg-warning text-dark"
+                ? "bg-success"
+                : order.orderStatus === "Cancelled"
+                  ? "bg-danger"
+                  : order.orderStatus === "Out for Delivery"
+                    ? "bg-primary"
+                    : "bg-warning text-dark"
                 }`}
             >
               {order.orderStatus}
@@ -107,10 +113,10 @@ export default function OrderDetails() {
 
             <span
               className={`badge ${order.paymentStatus === "Paid"
-                  ? "bg-success"
-                  : order.paymentStatus === "Failed"
-                    ? "bg-danger"
-                    : "bg-warning text-dark"
+                ? "bg-success"
+                : order.paymentStatus === "Failed"
+                  ? "bg-danger"
+                  : "bg-warning text-dark"
                 }`}
             >
               {order.paymentStatus}

@@ -5,6 +5,7 @@ import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
 import { getMyOrders } from "../features/order/orderApi";
+import SEO from "../Components/SEO";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -61,6 +62,11 @@ export default function Orders() {
   if (loading) {
     return (
       <>
+
+        <SEO
+          title="Orders | Souk Fashion House"
+          noIndex
+        />
         <Navbar />
 
         <main className="orders-page">

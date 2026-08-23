@@ -448,7 +448,7 @@ export default function ProductCard({ product }) {
   return (
     <>
       <Link
-        to={`/products/${product._id}`}
+        to={`/products/${product.slug}`}
         className="premium-product-card"
         onMouseEnter={
           handleMouseEnter

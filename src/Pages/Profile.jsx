@@ -18,6 +18,7 @@ import { updateProfile } from "../features/auth/authApi";
 import { setUser } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import SEO from "../Components/SEO";
 
 export default function Profile() {
     const dispatch = useDispatch();
@@ -125,6 +126,10 @@ export default function Profile() {
 
     return (
         <>
+            <SEO
+                title="Profile | Souk Fashion House"
+                noIndex
+            />
             <Navbar />
 
             <section className="profile-page">

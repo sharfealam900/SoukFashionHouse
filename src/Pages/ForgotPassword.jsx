@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import SEO from "../Components/SEO";
 
 
 export default function ForgotPassword() {
@@ -51,6 +52,11 @@ export default function ForgotPassword() {
         <p className="auth-subtitle">
           Enter your registered email to receive an OTP.
         </p>
+
+        <SEO
+          title="ForgetPassword | Souk Fashion House"
+          noIndex
+        />
 
         <form onSubmit={submitHandler}>
 

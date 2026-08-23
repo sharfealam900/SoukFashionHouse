@@ -6,6 +6,7 @@ import OrderSummary from "../Components/Checkout/OrderSummary";
 import AddressForm from "../Components/Checkout/AddressForm";
 import PaymentMethod from "../Components/Checkout/PaymentMethod";
 import PlaceOrder from "../Components/Checkout/PlaceOrder";
+import SEO from "../Components/SEO";
 
 export default function Checkout() {
     const [shippingAddress, setShippingAddress] = useState({
@@ -28,6 +29,10 @@ export default function Checkout() {
 
     return (
         <>
+            <SEO
+                title="Checkout | Souk Fashion House"
+                noIndex
+            />
             <Navbar />
 
             <main className="checkout-page">

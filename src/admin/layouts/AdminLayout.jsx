@@ -3,6 +3,7 @@ import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import "../Admin.css";
+import SEO from "../../Components/SEO";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +18,11 @@ export default function AdminLayout() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      <SEO
+        title="Admin | Souk Fashion House"
+        noIndex
+      />
 
       <Sidebar
         sidebarOpen={sidebarOpen}
