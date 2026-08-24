@@ -208,13 +208,13 @@ export default function NewArrival() {
                                     },
 
                                     1200: {
-                                        slidesPerView: 4,
+                                        slidesPerView: 2,
                                         slidesPerGroup: 1,
                                         spaceBetween: 24,
                                     },
 
                                     1400: {
-                                        slidesPerView: 4,
+                                        slidesPerView: 5,
                                         slidesPerGroup: 1,
                                         spaceBetween: 22,
                                     },

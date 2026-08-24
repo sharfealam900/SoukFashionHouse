@@ -227,12 +227,12 @@ export default function BestSeller() {
                                     },
 
                                     1200: {
-                                        slidesPerView: 4,
+                                        slidesPerView: 5,
                                         spaceBetween: 22,
                                     },
 
                                     1400: {
-                                        slidesPerView: 4,
+                                        slidesPerView: 5,
                                         spaceBetween: 20,
                                     },
                                 }}
