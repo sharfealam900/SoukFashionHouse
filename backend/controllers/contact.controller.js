@@ -1,9 +1,7 @@
 import Contact from "../models/contact.model.js";
 import nodemailer from "nodemailer";
 
-/* ===================================
-   SEND MESSAGE
-=================================== */
+
 
 export const sendMessage = async (req, res) => {
   try {
@@ -51,9 +49,6 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-/* ===================================
-   GET ALL MESSAGES (ADMIN)
-=================================== */
 
 export const getAllMessages = async (req, res) => {
 
@@ -79,9 +74,6 @@ export const getAllMessages = async (req, res) => {
 
 };
 
-/* ===================================
-   GET SINGLE MESSAGE
-=================================== */
 
 export const getSingleMessage = async (req, res) => {
 
@@ -116,9 +108,6 @@ export const getSingleMessage = async (req, res) => {
 
 };
 
-/* ===================================
-   UPDATE STATUS
-=================================== */
 
 export const updateStatus = async (req, res) => {
 
@@ -159,9 +148,7 @@ export const updateStatus = async (req, res) => {
 
 };
 
-/* ===================================
-   REPLY TO CUSTOMER
-=================================== */
+
 
 export const replyMessage = async (req, res) => {
 
@@ -243,9 +230,6 @@ export const replyMessage = async (req, res) => {
 
 };
 
-/* ===================================
-   DELETE MESSAGE
-=================================== */
 
 export const deleteMessage = async (req, res) => {
 

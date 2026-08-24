@@ -36,12 +36,15 @@ export default function VerifyOtp() {
 
         const enteredOtp = otp.join("");
 
-        if (enteredOtp.length !== 6) {
-            return toast.error(
-                "Enter a valid OTP."
-            );
-        } {
-            return toast.error("Enter a valid 6-digit OTP.");
+        if (!email) {
+            toast.error("Verification email not found. Please register again.");
+            navigate("/register");
+            return;
+        }
+
+        if (!/^\d{6}$/.test(enteredOtp)) {
+            toast.error("Enter a valid 6-digit OTP.");
+            return;
         }
 
         try {
@@ -59,21 +62,21 @@ export default function VerifyOtp() {
 
             sessionStorage.removeItem("verifyEmail");
 
-            toast.success(data.message);
+            toast.success(data.message || "Email verified successfully.");
 
             navigate("/");
-
         } catch (error) {
+            console.error(
+                "OTP verification error:",
+                error.response?.data || error.message
+            );
 
             toast.error(
                 error.response?.data?.message ||
                 "OTP verification failed."
             );
-
         } finally {
-
             setLoading(false);
-
         }
     };
 

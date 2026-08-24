@@ -2,9 +2,6 @@ import Banner from "../models/banner.model.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 
 
-/* =========================================
-   CREATE BANNER
-========================================= */
 
 export const createBanner = async (req, res) => {
     try {
@@ -60,9 +57,7 @@ export const createBanner = async (req, res) => {
     }
 };
 
-/* =========================================
-   GET ACTIVE BANNERS
-========================================= */
+
 
 export const getActiveBanners = async (
     req,
@@ -88,9 +83,7 @@ export const getActiveBanners = async (
     }
 };
 
-/* =========================================
-   ADMIN - GET ALL
-========================================= */
+
 
 export const getAllBanners = async (
     req,
@@ -115,9 +108,7 @@ export const getAllBanners = async (
     }
 };
 
-/* =========================================
-   GET SINGLE
-========================================= */
+
 
 export const getBannerById = async (
     req,
@@ -148,9 +139,7 @@ export const getBannerById = async (
     }
 };
 
-/* =========================================
-   UPDATE BANNER
-========================================= */
+
 
 export const updateBanner = async (
     req,
@@ -212,9 +201,6 @@ export const updateBanner = async (
     }
 };
 
-/* =========================================
-   DELETE BANNER
-========================================= */
 
 export const deleteBanner = async (
     req,

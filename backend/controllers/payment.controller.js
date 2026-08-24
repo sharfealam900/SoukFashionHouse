@@ -8,9 +8,7 @@ import Coupon from "../models/coupon.model.js";
 import { placeOrder } from "./order.controller.js";
 
 
-// ============================================================
-// CREATE RAZORPAY ORDER
-// ============================================================
+
 
 export const createRazorpayOrder = async (req, res) => {
   try {
@@ -22,9 +20,6 @@ export const createRazorpayOrder = async (req, res) => {
     } = req.body;
 
 
-    // ==========================================================
-    // 1. VALIDATE SHIPPING ADDRESS
-    // ==========================================================
 
     if (
       !shippingAddress?.fullName ||
@@ -39,9 +34,6 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 2. GET CART
-    // ==========================================================
 
     const cart = await Cart.findOne({
       user: userId,
@@ -56,9 +48,7 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 3. REMOVE STALE PRODUCTS
-    // ==========================================================
+
 
     const validItems = cart.items.filter(
       (item) => item.product
@@ -85,9 +75,7 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 4. CALCULATE PRODUCTS + VALIDATE STOCK
-    // ==========================================================
+
 
     let totalAmount = 0;
 
@@ -100,9 +88,7 @@ export const createRazorpayOrder = async (req, res) => {
       const quantity = Number(item.quantity);
 
 
-      // --------------------------------------------------------
-      // Validate quantity
-      // --------------------------------------------------------
+
 
       if (
         !Number.isInteger(quantity) ||
@@ -116,9 +102,7 @@ export const createRazorpayOrder = async (req, res) => {
       }
 
 
-      // --------------------------------------------------------
-      // Validate size
-      // --------------------------------------------------------
+ 
 
       if (product.sizes?.length > 0) {
 
@@ -157,9 +141,7 @@ export const createRazorpayOrder = async (req, res) => {
 
       } else {
 
-        // ------------------------------------------------------
-        // Product without size
-        // ------------------------------------------------------
+
 
         if (
           Number(product.stock) < quantity
@@ -173,9 +155,7 @@ export const createRazorpayOrder = async (req, res) => {
       }
 
 
-      // ========================================================
-      // PRODUCT DISCOUNT
-      // ========================================================
+
 
       const productDiscount =
         Number(product.discount || 0);
@@ -193,9 +173,6 @@ export const createRazorpayOrder = async (req, res) => {
       totalAmount += price * quantity;
 
 
-      // ========================================================
-      // PREPARE ORDER ITEM
-      // ========================================================
 
       orderItems.push({
         product: product._id,
@@ -216,9 +193,7 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 5. COUPON
-    // ==========================================================
+
 
     let discountAmount = 0;
 
@@ -289,9 +264,6 @@ export const createRazorpayOrder = async (req, res) => {
       }
 
 
-      // --------------------------------------------------------
-      // Percentage coupon
-      // --------------------------------------------------------
 
       if (
         coupon.discountType ===
@@ -316,9 +288,6 @@ export const createRazorpayOrder = async (req, res) => {
 
       } else {
 
-        // ------------------------------------------------------
-        // Fixed coupon
-        // ------------------------------------------------------
 
         discountAmount =
           coupon.discountValue;
@@ -338,9 +307,6 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 6. FINAL AMOUNT
-    // ==========================================================
 
     const finalAmount =
       Math.max(
@@ -350,9 +316,7 @@ export const createRazorpayOrder = async (req, res) => {
       );
 
 
-    // ==========================================================
-    // 7. PREPARE ITEM PRICES AFTER COUPON
-    // ==========================================================
+
 
     if (
       discountAmount > 0 &&
@@ -378,10 +342,6 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 8. RAZORPAY AMOUNT
-    // ==========================================================
-
     const amountInPaise =
       Math.round(
         finalAmount * 100
@@ -397,9 +357,7 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
 
-    // ==========================================================
-    // 9. CREATE RAZORPAY ORDER
-    // ==========================================================
+
 
     const razorpayOrder =
       await razorpay.orders.create({
@@ -430,9 +388,7 @@ export const createRazorpayOrder = async (req, res) => {
       });
 
 
-    // ==========================================================
-    // 10. SEND RESPONSE
-    // ==========================================================
+
 
     return res.status(200).json({
 
@@ -479,9 +435,6 @@ export const createRazorpayOrder = async (req, res) => {
 
 
 
-// ============================================================
-// VERIFY RAZORPAY PAYMENT
-// ============================================================
 
 export const verifyRazorpayPayment = async (req, res) => {
   try {
@@ -495,9 +448,6 @@ export const verifyRazorpayPayment = async (req, res) => {
       couponCode,
     } = req.body;
 
-    // ========================================================
-    // 1. CHECK REQUIRED PAYMENT DATA
-    // ========================================================
 
     if (
       !razorpay_order_id ||
@@ -509,10 +459,6 @@ export const verifyRazorpayPayment = async (req, res) => {
         message: "Payment information is missing",
       });
     }
-
-    // ========================================================
-    // 2. PREVENT DUPLICATE PAYMENT PROCESSING
-    // ========================================================
 
     const existingOrder = await Order.findOne({
       razorpayPaymentId: razorpay_payment_id,
@@ -526,9 +472,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 3. GENERATE SIGNATURE
-    // ========================================================
+
 
     const generatedSignature = crypto
       .createHmac(
@@ -540,9 +484,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       )
       .digest("hex");
 
-    // ========================================================
-    // 4. VERIFY SIGNATURE
-    // ========================================================
+
 
     if (
       generatedSignature !==
@@ -554,9 +496,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 5. FETCH RAZORPAY ORDER
-    // ========================================================
+
 
     const razorpayOrder =
       await razorpay.orders.fetch(
@@ -570,9 +510,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 6. MAKE SURE PAYMENT BELONGS TO CURRENT USER
-    // ========================================================
+
 
     if (
       razorpayOrder.notes?.userId &&
@@ -586,18 +524,13 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 7. FETCH PAYMENT
-    // ========================================================
 
     const payment =
       await razorpay.payments.fetch(
         razorpay_payment_id
       );
 
-    // ========================================================
-    // 8. VERIFY PAYMENT ORDER ID
-    // ========================================================
+
 
     if (
       payment.order_id !==
@@ -610,9 +543,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 9. VERIFY PAYMENT STATUS
-    // ========================================================
+
 
     if (payment.status !== "captured") {
       return res.status(400).json({
@@ -622,9 +553,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 10. VERIFY PAYMENT AMOUNT
-    // ========================================================
+
 
     if (
       Number(payment.amount) !==
@@ -636,9 +565,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // ========================================================
-    // 11. PASS VERIFIED PAYMENT TO EXISTING ORDER LOGIC
-    // ========================================================
+
 
     req.body = {
       shippingAddress,
@@ -657,9 +584,7 @@ export const verifyRazorpayPayment = async (req, res) => {
         razorpay_signature,
     };
 
-    // ========================================================
-    // 12. CREATE ACTUAL E-COMMERCE ORDER
-    // ========================================================
+
 
     return await placeOrder(
       req,

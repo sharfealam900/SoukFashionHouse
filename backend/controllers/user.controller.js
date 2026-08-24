@@ -18,6 +18,17 @@ export const registerUser = async (req, res) => {
             phone,
         } = req.body;
 
+        // -----------------------------
+        // VALIDATION
+        // -----------------------------
+
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Please fill all required fields.",
+            });
+        }
+
         if (
             confirmPassword !== undefined &&
             password !== confirmPassword
@@ -28,17 +39,14 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        // Validate required fields
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Please fill all required fields.",
-            });
-        }
+        const normalizedEmail = email.trim().toLowerCase();
 
-        // Check if user already exists
+        // -----------------------------
+        // CHECK EXISTING USER
+        // -----------------------------
+
         const existingUser = await User.findOne({
-            email,
+            email: normalizedEmail,
         });
 
         if (existingUser) {
@@ -48,65 +56,98 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        // Remove any previous OTP for this email
-        await Otp.deleteOne({ email });
+        // -----------------------------
+        // REMOVE OLD OTP
+        // -----------------------------
 
-        // Hash password
+        await Otp.deleteOne({
+            email: normalizedEmail,
+        });
+
+        // -----------------------------
+        // HASH PASSWORD
+        // -----------------------------
+
         const hashedPassword = await bcrypt.hash(
             password,
             10
         );
 
-        // Generate 6-digit OTP
+        // -----------------------------
+        // GENERATE OTP
+        // -----------------------------
+
         const otp = crypto
-            .randomInt(100000, 999999)
+            .randomInt(100000, 1000000)
             .toString();
 
-        // Save temporary registration
+        // -----------------------------
+        // SAVE TEMPORARY REGISTRATION
+        // -----------------------------
+
         await Otp.create({
             name,
-            email,
+            email: normalizedEmail,
             password: hashedPassword,
-            phone,
+            phone: phone || "",
             otp,
             expiresAt: new Date(
                 Date.now() + 10 * 60 * 1000
-            ), // 10 minutes
+            ),
         });
 
-        // Send response immediately
-        res.status(200).json({
-            success: true,
-            message: "OTP sent to your email.",
-        });
+        // -----------------------------
+        // SEND EMAIL
+        // -----------------------------
 
-        // Send email in background
-        sendEmail(
-            email,
-            "Verify Your Email",
-            otp
-        )
-            .then(() => {
-                console.log(
-                    `✅ OTP sent successfully to ${email}`
-                );
-            })
-            .catch((error) => {
-                console.error(
-                    `❌ Failed to send OTP to ${email}:`,
-                    error.message
-                );
+        try {
+            await sendEmail(
+                normalizedEmail,
+                "Verify Your Email",
+                otp
+            );
 
-                // Optional: remove OTP if email sending fails
-                Otp.deleteOne({ email }).catch(() => { });
+            console.log(
+                `✅ Registration OTP sent successfully to ${normalizedEmail}`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent to your email.",
             });
 
+        } catch (emailError) {
+
+            console.error(
+                "❌ REGISTRATION EMAIL ERROR:",
+                emailError
+            );
+
+            // Remove temporary OTP because
+            // email was not successfully sent
+            await Otp.deleteOne({
+                email: normalizedEmail,
+            });
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to send OTP email. Please try again later.",
+            });
+        }
+
     } catch (error) {
-        console.error(error);
+
+        console.error(
+            "❌ REGISTER ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message:
+                error.message ||
+                "Registration failed.",
         });
     }
 };
@@ -196,18 +237,28 @@ export const resendRegisterOtp = async (req, res) => {
             });
         }
 
-        const otpData = await Otp.findOne({ email });
+        const normalizedEmail = email
+            .trim()
+            .toLowerCase();
+
+        const otpData = await Otp.findOne({
+            email: normalizedEmail,
+        });
 
         if (!otpData) {
             return res.status(404).json({
                 success: false,
-                message: "Registration session expired. Please register again.",
+                message:
+                    "Registration session expired. Please register again.",
             });
         }
 
-        // Generate new OTP
+        // -----------------------------
+        // GENERATE NEW OTP
+        // -----------------------------
+
         const otp = crypto
-            .randomInt(100000, 999999)
+            .randomInt(100000, 1000000)
             .toString();
 
         otpData.otp = otp;
@@ -218,30 +269,56 @@ export const resendRegisterOtp = async (req, res) => {
 
         await otpData.save();
 
-        // Send email in background
-        sendEmail(
-            email,
-            "Verify Your Email",
-            otp
-        ).catch((error) => {
-            console.error(error);
-        });
+        // -----------------------------
+        // SEND EMAIL
+        // -----------------------------
 
-        res.status(200).json({
-            success: true,
-            message: "A new OTP has been sent to your email.",
-        });
+        try {
+            await sendEmail(
+                normalizedEmail,
+                "Verify Your Email",
+                otp
+            );
+
+            console.log(
+                `✅ New registration OTP sent to ${normalizedEmail}`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message:
+                    "A new OTP has been sent to your email.",
+            });
+
+        } catch (emailError) {
+
+            console.error(
+                "❌ RESEND OTP EMAIL ERROR:",
+                emailError
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to send OTP email. Please try again later.",
+            });
+        }
 
     } catch (error) {
 
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        console.error(
+            "❌ RESEND REGISTER OTP ERROR:",
+            error
+        );
 
+        return res.status(500).json({
+            success: false,
+            message:
+                error.message ||
+                "Unable to resend OTP.",
+        });
     }
 };
-
 
 
 

@@ -37,9 +37,6 @@ export const placeOrder = async (req, res) => {
 
     await session.withTransaction(async () => {
 
-      // =========================================================
-      // 1. Validate shipping address
-      // =========================================================
 
       if (
         !shippingAddress?.fullName ||
@@ -50,9 +47,6 @@ export const placeOrder = async (req, res) => {
         fail(400, "Shipping address is required");
       }
 
-      // =========================================================
-      // 2. Get cart inside transaction
-      // =========================================================
 
       const cart = await Cart.findOne({
         user: userId,
@@ -64,9 +58,7 @@ export const placeOrder = async (req, res) => {
         fail(400, "Cart is empty");
       }
 
-      // =========================================================
-      // 3. Remove stale/deleted products
-      // =========================================================
+
 
       const validItems = cart.items.filter(
         (item) => item.product
@@ -88,9 +80,7 @@ export const placeOrder = async (req, res) => {
         );
       }
 
-      // =========================================================
-      // 4. Calculate products and validate stock
-      // =========================================================
+
 
       let appliedCoupon = null;
 
@@ -99,9 +89,7 @@ export const placeOrder = async (req, res) => {
       for (const item of validItems) {
         const product = item.product;
 
-        // -------------------------------------------------------
-        // Validate quantity
-        // -------------------------------------------------------
+
 
         const quantity = Number(item.quantity);
 
@@ -115,9 +103,7 @@ export const placeOrder = async (req, res) => {
           );
         }
 
-        // -------------------------------------------------------
-        // Validate product size / stock
-        // -------------------------------------------------------
+
 
         let selectedSize = null;
 
@@ -152,9 +138,7 @@ export const placeOrder = async (req, res) => {
 
         } else {
 
-          // -----------------------------------------------------
-          // Product without size
-          // -----------------------------------------------------
+
 
           if (product.stock < quantity) {
             fail(
@@ -164,9 +148,7 @@ export const placeOrder = async (req, res) => {
           }
         }
 
-        // -------------------------------------------------------
-        // Calculate product price
-        // -------------------------------------------------------
+
 
         const productDiscount =
           Number(product.discount || 0);
@@ -191,9 +173,7 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      // =========================================================
-      // 5. Validate coupon
-      // =========================================================
+  
 
       if (couponCode) {
 
@@ -269,18 +249,13 @@ export const placeOrder = async (req, res) => {
         appliedCoupon = coupon;
       }
 
-      // =========================================================
-      // 6. Calculate final amount
-      // =========================================================
+
 
       finalAmount = Math.max(
         totalAmount - discountAmount,
         0
       );
 
-      // =========================================================
-      // 7. Distribute coupon discount across items
-      // =========================================================
 
       if (
         discountAmount > 0 &&
@@ -296,9 +271,7 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      // =========================================================
-      // 8. Atomically reserve/decrease stock
-      // =========================================================
+
 
       for (const item of validItems) {
 
@@ -371,9 +344,7 @@ export const placeOrder = async (req, res) => {
         await product.save({ session });
       }
 
-      // =========================================================
-      // 9. Create order inside transaction
-      // =========================================================
+ 
 
       createdOrder = await Order.create(
         [
@@ -428,9 +399,7 @@ export const placeOrder = async (req, res) => {
       );
       createdOrder = createdOrder[0];
 
-      // =========================================================
-      // 10. Increment coupon usage
-      // =========================================================
+
 
       if (appliedCoupon) {
 
@@ -441,9 +410,7 @@ export const placeOrder = async (req, res) => {
         });
       }
 
-      // =========================================================
-      // 11. Clear cart
-      // =========================================================
+
 
       cart.items = [];
 
@@ -452,9 +419,7 @@ export const placeOrder = async (req, res) => {
       });
     });
 
-    // ===========================================================
-    // Transaction successful
-    // ===========================================================
+
 
     return res.status(201).json({
       success: true,

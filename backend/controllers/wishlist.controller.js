@@ -1,8 +1,6 @@
 import Wishlist from "../models/wishlist.model.js";
 
-/* ============================
-   ADD TO WISHLIST
-============================ */
+
 
 export const addToWishlist = async (req, res) => {
   try {
@@ -49,9 +47,7 @@ export const addToWishlist = async (req, res) => {
   }
 };
 
-/* ============================
-   GET WISHLIST
-============================ */
+
 
 export const getWishlist = async (req, res) => {
   try {
@@ -82,9 +78,7 @@ export const getWishlist = async (req, res) => {
   }
 };
 
-/* ============================
-   REMOVE PRODUCT
-============================ */
+
 
 export const removeWishlistItem = async (req, res) => {
   try {
@@ -122,9 +116,6 @@ export const removeWishlistItem = async (req, res) => {
   }
 };
 
-/* ============================
-   CLEAR WISHLIST
-============================ */
 
 export const clearWishlist = async (req, res) => {
   try {

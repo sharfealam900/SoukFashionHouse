@@ -72,9 +72,7 @@ export const createProduct = async (req, res) => {
       colors,
     } = req.body;
 
-    // ==========================================
-    // PARSE PRODUCT SIZES
-    // ==========================================
+
 
     let parsedSizes = [];
 
@@ -120,9 +118,7 @@ export const createProduct = async (req, res) => {
 
 
 
-    // ==========================================
-    // CHECK CATEGORY
-    // ==========================================
+   
 
     const categoryExists = await Category.findById(category);
 
@@ -133,9 +129,6 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // UPLOAD IMAGES
-    // ==========================================
 
     let uploadedImages = [];
 
@@ -150,9 +143,7 @@ export const createProduct = async (req, res) => {
       }
     }
 
-    // ==========================================
-    // GENERATE SLUG
-    // ==========================================
+
 
     let slug = slugify(name, {
       lower: true,
@@ -165,15 +156,11 @@ export const createProduct = async (req, res) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-    // ==========================================
-    // GENERATE SKU
-    // ==========================================
+
 
     const sku = `SOUK-${Date.now()}`;
 
-    // ==========================================
-    // CREATE PRODUCT
-    // ==========================================
+
 
     const product = await Product.create({
       name,
@@ -191,9 +178,6 @@ export const createProduct = async (req, res) => {
       images: uploadedImages,
     });
 
-    // ==========================================
-    // RESPONSE
-    // ==========================================
 
     return res.status(201).json({
       success: true,

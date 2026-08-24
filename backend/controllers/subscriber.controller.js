@@ -1,8 +1,6 @@
 import Subscriber from "../models/subscriber.model.js";
 
-/* ===============================
-   SUBSCRIBE TO NEWSLETTER
-================================ */
+
 
 export const subscribe = async (req, res) => {
   try {
@@ -43,9 +41,7 @@ export const subscribe = async (req, res) => {
   }
 };
 
-/* ===============================
-   GET ALL SUBSCRIBERS (ADMIN)
-================================ */
+
 
 export const getSubscribers = async (req, res) => {
   try {
@@ -66,9 +62,7 @@ export const getSubscribers = async (req, res) => {
   }
 };
 
-/* ===============================
-   DELETE SUBSCRIBER (ADMIN)
-================================ */
+
 
 export const deleteSubscriber = async (req, res) => {
   try {
@@ -97,9 +91,6 @@ export const deleteSubscriber = async (req, res) => {
   }
 };
 
-/* ===============================
-   EXPORT SUBSCRIBERS (ADMIN)
-================================ */
 
 export const exportSubscribers = async (req, res) => {
   try {
