@@ -9,7 +9,12 @@ import ProductCard from "./ProductCard";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { Leaf, LockKeyhole, Star } from "lucide-react";
+import {
+    ArrowUpRight,
+    Leaf,
+    LockKeyhole,
+    Star,
+} from "lucide-react";
 
 export default function BestSeller() {
     const [products, setProducts] = useState([]);
@@ -35,230 +40,245 @@ export default function BestSeller() {
     };
 
     return (
-        <section className="products-section best-seller-section">
+        <section className="best-seller-section">
+
             <div className="container best-seller-container">
 
-                {/* =========================
-                    HEADER
-                ========================= */}
+                {/* ==========================================
+                    INTRO
+                ========================================== */}
 
-                <div className="premium-section-header">
+                <div className="best-seller-intro">
 
-                    <div className="premium-heading">
+                    <div className="best-seller-heading">
 
-                        <span className="section-label">
-                            OUR COLLECTION
+                        <span className="best-seller-eyebrow">
+                            THE MOST LOVED
                         </span>
 
-                        <h2>Best Sellers</h2>
+                        <h2>
+                            Best Sellers
+                        </h2>
+
+                        <div className="best-seller-heading-line" />
+
+                    </div>
+
+
+                    <div className="best-seller-description">
 
                         <p>
-                            Discover timeless fashion pieces loved by our
-                            customers. Carefully curated designs that blend
-                            elegance, comfort, and everyday style.
+                            Discover the pieces our customers return
+                            to again and again — timeless silhouettes
+                            designed for effortless everyday elegance.
                         </p>
 
-                        {/* BENEFITS */}
+                        <Link
+                            to="/shop"
+                            className="best-seller-link"
+                        >
+                            <span>View Collection</span>
 
-                        <div className="best-sellers-benefits">
+                            <span className="best-seller-link-arrow">
+                                <ArrowUpRight size={16} />
+                            </span>
+                        </Link>
 
-                            <div className="benefit-item">
+                    </div>
 
-                                <div className="benefit-icon">
-                                    <Star size={20} strokeWidth={1.8} />
-                                </div>
-
-                                <div className="benefit-content">
-                                    <strong>Top Rated</strong>
-                                    <span>Loved by customers</span>
-                                </div>
-
-                            </div>
+                </div>
 
 
-                            <div className="benefit-divider" />
+                {/* ==========================================
+                    BENEFITS
+                ========================================== */}
 
+                <div className="best-seller-benefits">
 
-                            <div className="benefit-item">
+                    <div className="best-seller-benefit">
 
-                                <div className="benefit-icon">
-                                    <Leaf size={20} strokeWidth={1.8} />
-                                </div>
+                        <div className="best-seller-benefit-icon">
+                            <Star size={17} />
+                        </div>
 
-                                <div className="benefit-content">
-                                    <strong>Premium Quality</strong>
-                                    <span>Finest materials</span>
-                                </div>
-
-                            </div>
-
-
-                            <div className="benefit-divider" />
-
-
-                            <div className="benefit-item">
-
-                                <div className="benefit-icon">
-                                    <LockKeyhole
-                                        size={20}
-                                        strokeWidth={1.8}
-                                    />
-                                </div>
-
-                                <div className="benefit-content">
-                                    <strong>Secure Shopping</strong>
-                                    <span>Safe & protected</span>
-                                </div>
-
-                            </div>
-
+                        <div>
+                            <strong>Top Rated</strong>
+                            <span>Loved by our customers</span>
                         </div>
 
                     </div>
 
 
-                    <Link
-                        to="/shop"
-                        className="premium-view-btn"
-                    >
-                        View Collection →
-                    </Link>
+                    <div className="best-seller-benefit-divider" />
+
+
+                    <div className="best-seller-benefit">
+
+                        <div className="best-seller-benefit-icon">
+                            <Leaf size={17} />
+                        </div>
+
+                        <div>
+                            <strong>Premium Quality</strong>
+                            <span>Thoughtfully selected materials</span>
+                        </div>
+
+                    </div>
+
+
+                    <div className="best-seller-benefit-divider" />
+
+
+                    <div className="best-seller-benefit">
+
+                        <div className="best-seller-benefit-icon">
+                            <LockKeyhole size={17} />
+                        </div>
+
+                        <div>
+                            <strong>Secure Shopping</strong>
+                            <span>Safe & protected checkout</span>
+                        </div>
+
+                    </div>
 
                 </div>
 
 
-                {/* =========================
-                    PRODUCT SLIDER
-                ========================= */}
+                {/* ==========================================
+                    PRODUCTS
+                ========================================== */}
 
                 {products.length > 0 && (
-                    <div className="best-seller-slider">
+                    <div className="best-seller-products">
 
-                        {/* PREVIOUS */}
+                        <div className="best-seller-slider">
 
-                        <button
-                            ref={prevRef}
-                            type="button"
-                            className="slider-btn prev best-seller-nav-arrow"
-                            aria-label="Previous products"
-                        >
-                            &#10094;
-                        </button>
+                            {/* PREVIOUS */}
 
-
-                        <Swiper
-                            modules={[Navigation]}
-
-                            className="best-seller-swiper"
-
-                            speed={600}
-
-                            slidesPerGroup={1}
-
-                            loop={products.length > 5}
-
-                            navigation={{
-                                prevEl: prevRef.current,
-                                nextEl: nextRef.current,
-                            }}
-
-                            onSwiper={(swiper) => {
-                                setTimeout(() => {
-                                    if (
-                                        !swiper.navigation ||
-                                        !prevRef.current ||
-                                        !nextRef.current
-                                    ) {
-                                        return;
-                                    }
-
-                                    swiper.params.navigation.prevEl =
-                                        prevRef.current;
-
-                                    swiper.params.navigation.nextEl =
-                                        nextRef.current;
-
-                                    swiper.navigation.destroy();
-                                    swiper.navigation.init();
-                                    swiper.navigation.update();
-                                }, 100);
-                            }}
-
-                            breakpoints={{
-
-                                /* Mobile */
-
-                                0: {
-                                    slidesPerView: 1,
-                                    spaceBetween: 14,
-                                },
-
-                                /* Large mobile */
-
-                                480: {
-                                    slidesPerView: 1,
-                                    spaceBetween: 16,
-                                },
-
-                                /* Tablet */
-
-                                576: {
-                                    slidesPerView: 2,
-                                    spaceBetween: 18,
-                                },
-
-                                /* Small desktop */
-
-                                768: {
-                                    slidesPerView: 3,
-                                    spaceBetween: 20,
-                                },
-
-                                /* Desktop */
-
-                                992: {
-                                    slidesPerView: 4,
-                                    spaceBetween: 22,
-                                },
-
-                                /* Large desktop */
-
-                                1200: {
-                                    slidesPerView: 4,
-                                    spaceBetween: 20,
-                                },
-
-                                /* Wide desktop */
-
-                                1400: {
-                                    slidesPerView: 4,
-                                    spaceBetween: 16,
-                                },
-                            }}
-                        >
-
-                            {products.map((product) => (
-                                <SwiperSlide key={product._id}>
-                                    <ProductCard
-                                        product={product}
-                                        showWishlistButton={true}
-                                    />
-                                </SwiperSlide>
-                            ))}
-
-                        </Swiper>
+                            <button
+                                ref={prevRef}
+                                type="button"
+                                className="best-seller-arrow best-seller-prev"
+                                aria-label="Previous products"
+                            >
+                                <span>←</span>
+                            </button>
 
 
-                        {/* NEXT */}
+                            {/* SWIPER */}
 
-                        <button
-                            ref={nextRef}
-                            type="button"
-                            className="slider-btn next best-seller-nav-arrow"
-                            aria-label="Next products"
-                        >
-                            &#10095;
-                        </button>
+                            <Swiper
+                                modules={[Navigation]}
+                                className="best-seller-swiper"
+                                speed={650}
+                                slidesPerGroup={1}
+                                loop={products.length > 5}
+                                grabCursor={true}
+                                navigation={{
+                                    prevEl: prevRef.current,
+                                    nextEl: nextRef.current,
+                                }}
+                                onSwiper={(swiper) => {
+                                    setTimeout(() => {
+                                        if (
+                                            !swiper.navigation ||
+                                            !prevRef.current ||
+                                            !nextRef.current
+                                        ) {
+                                            return;
+                                        }
+
+                                        swiper.params.navigation.prevEl =
+                                            prevRef.current;
+
+                                        swiper.params.navigation.nextEl =
+                                            nextRef.current;
+
+                                        swiper.navigation.destroy();
+                                        swiper.navigation.init();
+                                        swiper.navigation.update();
+                                    }, 100);
+                                }}
+                                breakpoints={{
+                                    0: {
+                                        slidesPerView: 1,
+                                        spaceBetween: 14,
+                                    },
+
+                                    480: {
+                                        slidesPerView: 1,
+                                        spaceBetween: 16,
+                                    },
+
+                                    576: {
+                                        slidesPerView: 2,
+                                        spaceBetween: 18,
+                                    },
+
+                                    768: {
+                                        slidesPerView: 3,
+                                        spaceBetween: 20,
+                                    },
+
+                                    992: {
+                                        slidesPerView: 4,
+                                        spaceBetween: 22,
+                                    },
+
+                                    1200: {
+                                        slidesPerView: 4,
+                                        spaceBetween: 22,
+                                    },
+
+                                    1400: {
+                                        slidesPerView: 4,
+                                        spaceBetween: 20,
+                                    },
+                                }}
+                            >
+
+                                {products.map((product) => (
+                                    <SwiperSlide key={product._id}>
+                                        <ProductCard
+                                            product={product}
+                                            showWishlistButton={true}
+                                        />
+                                    </SwiperSlide>
+                                ))}
+
+                            </Swiper>
+
+
+                            {/* NEXT */}
+
+                            <button
+                                ref={nextRef}
+                                type="button"
+                                className="best-seller-arrow best-seller-next"
+                                aria-label="Next products"
+                            >
+                                <span>→</span>
+                            </button>
+
+                        </div>
+
+
+                        {/* ==================================
+                            FOOTER
+                        ================================== */}
+
+                        <div className="best-seller-footer">
+
+                            <span className="best-seller-footer-line" />
+
+                            <span>
+                                CURATED WITH INTENTION
+                            </span>
+
+                            <span className="best-seller-footer-line" />
+
+                        </div>
 
                     </div>
                 )}
