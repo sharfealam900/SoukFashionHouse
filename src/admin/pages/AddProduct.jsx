@@ -1,1601 +1,510 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { createProduct, deleteProductImage, getCategories, getProduct, updateProduct, } from "../services/adminApi";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import imageCompression from "browser-image-compression";
 
-import api from "../../api/axios";
 
 export default function AddProduct() {
-    const navigate = useNavigate();
-    const { id } = useParams();
 
-    const isEditMode = Boolean(id);
-
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        reset,
-        formState: { errors },
-    } = useForm();
-
-    const [loading, setLoading] = useState(false);
-    const [loadingProduct, setLoadingProduct] = useState(false);
-
-    const [imagePreviews, setImagePreviews] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [preview, setPreview] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const [compressingImages, setCompressingImages] = useState(false);
+    const [sizes, setSizes] = useState([
+        {
+            size: "",
+            stock: 0,
+        },
+    ]);
 
-    const [sizes, setSizes] = useState([]);
-    const [colors, setColors] = useState([]);
+    const { id } = useParams();
+    const isEdit = Boolean(id);
 
-    const [sizeInput, setSizeInput] = useState("");
-    const [colorInput, setColorInput] = useState("");
 
-    const images = watch("images");
+    const { register, handleSubmit, setValue } = useForm();
 
-    /* =========================================================
-       LOAD PRODUCT IN EDIT MODE
-    ========================================================= */
 
     useEffect(() => {
-        if (!isEditMode) return;
-
-        const loadProduct = async () => {
+        async function loadCategories() {
             try {
-                setLoadingProduct(true);
-
-                const { data } = await api.get(
-                    `/products/${id}`
-                );
-
-                const product = data.product || data;
-
-                if (!product) {
-                    toast.error("Product not found");
-                    navigate("/admin/products");
-                    return;
-                }
-
-                reset({
-                    name: product.name || "",
-                    description: product.description || "",
-                    brand: product.brand || "",
-                    gender: product.gender || "Unisex",
-                    price: product.price || "",
-                    discount: product.discount || 0,
-                    stock: product.stock || 0,
-                    sku: product.sku || "",
-                    category:
-                        product.category?._id ||
-                        product.category ||
-                        "",
-                    featured: product.featured || false,
-                    isActive:
-                        product.isActive !== undefined
-                            ? product.isActive
-                            : true,
-                });
-
-                setSizes(product.sizes || []);
-                setColors(product.colors || []);
-
-                setExistingImages(
-                    product.images || []
-                );
-
+                const { data } = await getCategories();
+                setCategories(data.categories);
             } catch (error) {
-                console.error(
-                    "Load product error:",
-                    error
-                );
-
-                toast.error(
-                    error.response?.data?.message ||
-                    "Unable to load product"
-                );
-
-            } finally {
-                setLoadingProduct(false);
+                console.error(error);
             }
-        };
+        }
 
-        loadProduct();
-    }, [id, isEditMode, navigate, reset]);
+        loadCategories();
+    }, []);
 
-    /* =========================================================
-       IMAGE COMPRESSION
-    ========================================================= */
 
-    const compressImage = async (file) => {
-        const options = {
-            maxSizeMB: 2,
-            maxWidthOrHeight: 1600,
-            useWebWorker: true,
-            fileType: "image/webp",
-            initialQuality: 0.82,
-        };
+    useEffect(() => {
+        if (isEdit) {
+            loadProduct();
+        }
+    }, [id]);
 
+
+    const loadProduct = async () => {
         try {
-            const compressedFile =
-                await imageCompression(
-                    file,
-                    options
-                );
+            const { data } = await getProduct(id);
 
-            /*
-             * browser-image-compression can return a Blob.
-             * Convert it back into a File so FormData
-             * and your existing backend continue working.
-             */
+            const product = data.product;
 
-            const compressedImage = new File(
-                [compressedFile],
-                `${file.name.replace(
-                    /\.[^/.]+$/,
-                    ""
-                )}.webp`,
-                {
-                    type: "image/webp",
-                    lastModified: Date.now(),
+            setValue("name", product.name || "");
+            setValue("description", product.description || "");
+            setValue("price", product.price || 0);
+            setValue("discount", product.discount || 0);
+            setValue("stock", product.stock || 0);
+            setValue("brand", product.brand || "");
+            setValue("gender", product.gender || "");
+            setValue("category", product.category?._id || "");
+
+            setExistingImages(product.images || []);
+
+
+
+            let productSizes = product.sizes || [];
+
+
+
+            if (
+                Array.isArray(productSizes) &&
+                productSizes.length === 1 &&
+                typeof productSizes[0] === "string"
+            ) {
+                try {
+                    productSizes = JSON.parse(productSizes[0]);
+                } catch (error) {
+                    console.error("Failed to parse sizes:", error);
+                    productSizes = [];
                 }
-            );
+            }
 
-            console.log(
-                `${file.name}: ${(
-                    file.size /
-                    1024 /
-                    1024
-                ).toFixed(2)} MB → ${(
-                    compressedImage.size /
-                    1024 /
-                    1024
-                ).toFixed(2)} MB`
-            );
 
-            return compressedImage;
+            productSizes = productSizes
+                .map((item) => {
+                    if (typeof item === "string") {
+                        try {
+                            return JSON.parse(item);
+                        } catch (error) {
+                            console.error("Invalid size item:", item);
+                            return null;
+                        }
+                    }
+
+                    return item;
+                })
+                .filter(Boolean);
+
+
+            productSizes = productSizes
+                .map((item) => ({
+                    size: Number(item.size),
+                    stock: Number(item.stock || 0),
+                }))
+                .filter((item) => !Number.isNaN(item.size));
+
+            console.log("ADMIN NORMALIZED SIZES:", productSizes);
+
+            setSizes(productSizes);
 
         } catch (error) {
-            console.error(
-                "Image compression failed:",
-                error
-            );
-
-            throw error;
+            console.error("Failed to load product:", error);
+            toast.error("Failed to load product.");
         }
     };
 
-    /* =========================================================
-       HANDLE NEW IMAGES
-    ========================================================= */
 
-    const handleImages = async (event) => {
-        const selectedFiles = Array.from(
-            event.target.files || []
+    const removeImage = async (imageId) => {
+        const confirmDelete = window.confirm(
+            "Delete this image?"
         );
 
-        if (!selectedFiles.length) {
-            return;
-        }
-
-        /*
-         * Existing images + newly selected images
-         * should not exceed 5.
-         */
-
-        const totalImageCount =
-            existingImages.length +
-            selectedFiles.length;
-
-        if (totalImageCount > 5) {
-            toast.error(
-                "Maximum 5 product images are allowed."
-            );
-
-            event.target.value = "";
-            return;
-        }
+        if (!confirmDelete) return;
 
         try {
-            setCompressingImages(true);
+            await deleteProductImage(id, imageId);
 
-            const compressedFiles = [];
-
-            for (const file of selectedFiles) {
-
-                if (
-                    !file.type ||
-                    !file.type.startsWith("image/")
-                ) {
-                    toast.error(
-                        `${file.name} is not a valid image.`
-                    );
-
-                    continue;
-                }
-
-                const compressed =
-                    await compressImage(file);
-
-                compressedFiles.push(
-                    compressed
-                );
-            }
-
-            if (!compressedFiles.length) {
-                toast.error(
-                    "No valid images selected."
-                );
-
-                return;
-            }
-
-            /*
-             * Store compressed files in React Hook Form.
-             * Your existing submit handler will therefore
-             * upload compressed files instead of originals.
-             */
-
-            setValue(
-                "images",
-                compressedFiles,
-                {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                }
+            setExistingImages((prev) =>
+                prev.filter((img) => img.public_id !== imageId)
             );
 
-            /*
-             * Create previews from compressed files.
-             */
-
-            const previews =
-                compressedFiles.map(
-                    (file) =>
-                        URL.createObjectURL(file)
-                );
-
-            setImagePreviews(
-                (previous) => [
-                    ...previous,
-                    ...previews,
-                ]
-            );
-
-            const originalSize =
-                selectedFiles.reduce(
-                    (total, file) =>
-                        total + file.size,
-                    0
-                );
-
-            const compressedSize =
-                compressedFiles.reduce(
-                    (total, file) =>
-                        total + file.size,
-                    0
-                );
-
-            toast.success(
-                `${compressedFiles.length} image(s) compressed and ready`
-            );
-
-            console.log(
-                "Original total:",
-                (
-                    originalSize /
-                    1024 /
-                    1024
-                ).toFixed(2),
-                "MB"
-            );
-
-            console.log(
-                "Compressed total:",
-                (
-                    compressedSize /
-                    1024 /
-                    1024
-                ).toFixed(2),
-                "MB"
-            );
-
+            toast.success("Image deleted successfully.");
         } catch (error) {
-
-            console.error(
-                "Image processing error:",
-                error
-            );
-
-            toast.error(
-                "Unable to process images."
-            );
-
-        } finally {
-
-            setCompressingImages(false);
-
-            /*
-             * Allows selecting the same image again.
-             */
-
-            event.target.value = "";
-        }
-    };
-
-    /* =========================================================
-       REMOVE NEW IMAGE
-    ========================================================= */
-
-    const removeNewImage = (index) => {
-        const currentImages =
-            watch("images") || [];
-
-        const currentPreviews =
-            imagePreviews || [];
-
-        /*
-         * Revoke object URL to avoid memory leaks.
-         */
-
-        if (currentPreviews[index]) {
-            URL.revokeObjectURL(
-                currentPreviews[index]
-            );
-        }
-
-        const newImages =
-            currentImages.filter(
-                (_, imageIndex) =>
-                    imageIndex !== index
-            );
-
-        const newPreviews =
-            currentPreviews.filter(
-                (_, imageIndex) =>
-                    imageIndex !== index
-            );
-
-        setValue(
-            "images",
-            newImages,
-            {
-                shouldValidate: true,
-                shouldDirty: true,
-            }
-        );
-
-        setImagePreviews(
-            newPreviews
-        );
-    };
-
-    /* =========================================================
-       REMOVE EXISTING CLOUDINARY IMAGE
-    ========================================================= */
-
-    const removeExistingImage = async (
-        imageIndex
-    ) => {
-        if (!isEditMode) return;
-
-        try {
-            /*
-             * If your backend already has a dedicated
-             * image-delete endpoint, use it here.
-             *
-             * Otherwise we only remove it from the
-             * frontend list and send the remaining images
-             * during update.
-             */
-
-            const updatedImages =
-                existingImages.filter(
-                    (_, index) =>
-                        index !== imageIndex
-                );
-
-            setExistingImages(
-                updatedImages
-            );
-
-        } catch (error) {
-
             console.error(error);
-
             toast.error(
-                "Unable to remove image."
+                error.response?.data?.message ||
+                "Failed to delete image."
             );
         }
     };
 
-    /* =========================================================
-       ADD SIZE
-    ========================================================= */
 
-    const addSize = () => {
-        const value =
-            String(sizeInput).trim();
 
-        if (!value) {
-            toast.error(
-                "Enter a size."
-            );
-            return;
-        }
 
-        const numericValue =
-            Number(value);
 
-        if (
-            Number.isNaN(numericValue)
-        ) {
-            toast.error(
-                "Size must be a number."
-            );
-            return;
-        }
+    const handleImages = (e) => {
+        const files = [...e.target.files];
 
-        if (
-            sizes.some(
-                (item) =>
-                    Number(item.size) ===
-                    numericValue
+        setPreview(files.map((file) => URL.createObjectURL(file)));
+    };
+
+
+    const handleSizeChange = (index, field, value) => {
+        setSizes((prev) =>
+            prev.map((item, i) =>
+                i === index
+                    ? {
+                        ...item,
+                        [field]: Number(value),
+                    }
+                    : item
             )
-        ) {
-            toast.error(
-                "This size already exists."
-            );
-            return;
-        }
+        );
+    };
 
+    const addSizeRow = () => {
         setSizes([
             ...sizes,
             {
-                size: numericValue,
+                size: "",
                 stock: 0,
             },
         ]);
-
-        setSizeInput("");
     };
 
-    /* =========================================================
-       REMOVE SIZE
-    ========================================================= */
-
-    const removeSize = (index) => {
-        setSizes(
-            sizes.filter(
-                (_, i) => i !== index
-            )
-        );
-    };
-
-    /* =========================================================
-       UPDATE SIZE STOCK
-    ========================================================= */
-
-    const updateSizeStock = (
-        index,
-        stock
-    ) => {
+    const removeSizeRow = (index) => {
         const updated = [...sizes];
 
-        updated[index] = {
-            ...updated[index],
-            stock: Math.max(
-                0,
-                Number(stock) || 0
-            ),
-        };
+        updated.splice(index, 1);
 
         setSizes(updated);
     };
 
-    /* =========================================================
-       ADD COLOR
-    ========================================================= */
 
-    const addColor = () => {
-        const value =
-            String(colorInput).trim();
 
-        if (!value) {
-            toast.error(
-                "Enter a color."
-            );
-            return;
-        }
 
-        if (
-            colors.some(
-                (color) =>
-                    color.toLowerCase() ===
-                    value.toLowerCase()
-            )
-        ) {
-            toast.error(
-                "This color already exists."
-            );
-            return;
-        }
-
-        setColors([
-            ...colors,
-            value,
-        ]);
-
-        setColorInput("");
-    };
-
-    /* =========================================================
-       REMOVE COLOR
-    ========================================================= */
-
-    const removeColor = (index) => {
-        setColors(
-            colors.filter(
-                (_, i) => i !== index
-            )
-        );
-    };
-
-    /* =========================================================
-       SUBMIT PRODUCT
-    ========================================================= */
 
     const onSubmit = async (data) => {
-
         try {
-
             setLoading(true);
 
-            const formData =
-                new FormData();
+            const formData = new FormData();
 
-            formData.append(
-                "name",
-                data.name
-            );
+            formData.append("name", data.name);
+            formData.append("description", data.description);
+            formData.append("price", data.price);
+            formData.append("discount", data.discount);
+            formData.append("stock", data.stock);
+            formData.append("brand", data.brand);
+            formData.append("gender", data.gender);
+            formData.append("category", data.category);
+            formData.append("sizes", JSON.stringify(sizes));
 
-            formData.append(
-                "description",
-                data.description
-            );
-
-            formData.append(
-                "brand",
-                data.brand || ""
-            );
-
-            formData.append(
-                "gender",
-                data.gender || "Unisex"
-            );
-
-            formData.append(
-                "price",
-                data.price
-            );
-
-            formData.append(
-                "discount",
-                data.discount || 0
-            );
-
-            formData.append(
-                "stock",
-                data.stock || 0
-            );
-
-            formData.append(
-                "sku",
-                data.sku
-            );
-
-            formData.append(
-                "category",
-                data.category
-            );
-
-            formData.append(
-                "featured",
-                data.featured
-                    ? "true"
-                    : "false"
-            );
-
-            formData.append(
-                "isActive",
-                data.isActive !== false
-                    ? "true"
-                    : "false"
-            );
-
-            /* =================================================
-               SIZES
-            ================================================= */
-
-            formData.append(
-                "sizes",
-                JSON.stringify(sizes)
-            );
-
-            /* =================================================
-               COLORS
-            ================================================= */
-
-            formData.append(
-                "colors",
-                JSON.stringify(colors)
-            );
-
-            /* =================================================
-               EXISTING IMAGES
-               Used during edit mode.
-            ================================================= */
-
-            if (isEditMode) {
-
-                formData.append(
-                    "existingImages",
-                    JSON.stringify(
-                        existingImages
-                    )
-                );
+            for (let image of data.images) {
+                formData.append("images", image);
             }
-
-            /* =================================================
-               NEW COMPRESSED IMAGES
-            ================================================= */
-
-            const newImages =
-                data.images || [];
-
-            newImages.forEach(
-                (image) => {
-
-                    formData.append(
-                        "images",
-                        image
-                    );
-                }
-            );
-
-            /* =================================================
-               API REQUEST
-            ================================================= */
 
             let response;
 
-            if (isEditMode) {
-
-                response =
-                    await api.put(
-                        `/products/${id}`,
-                        formData,
-                        {
-                            headers: {
-                                "Content-Type":
-                                    "multipart/form-data",
-                            },
-                        }
-                    );
-
+            if (isEdit) {
+                response = await updateProduct(id, formData);
             } else {
-
-                response =
-                    await api.post(
-                        "/products",
-                        formData,
-                        {
-                            headers: {
-                                "Content-Type":
-                                    "multipart/form-data",
-                            },
-                        }
-                    );
+                response = await createProduct(formData);
             }
 
             toast.success(
-                response.data?.message ||
-                (
-                    isEditMode
-                        ? "Product updated successfully"
-                        : "Product created successfully"
-                )
+                response.data.message ||
+                (isEdit
+                    ? "Product updated successfully"
+                    : "Product created successfully")
             );
 
-            navigate(
-                "/admin/products"
-            );
+            navigate("/admin/products");
 
         } catch (error) {
-
-            console.error(
-                "Product submit error:",
-                error
-            );
-
+            console.error(error);
             toast.error(
-                error.response?.data
-                    ?.message ||
-                "Unable to save product."
+                error.response?.data?.message ||
+                (isEdit
+                    ? "Failed to update product"
+                    : "Failed to create product")
             );
-
         } finally {
-
             setLoading(false);
         }
     };
 
-    /* =========================================================
-       CLEANUP PREVIEWS
-    ========================================================= */
-
-    useEffect(() => {
-        return () => {
-
-            imagePreviews.forEach(
-                (url) => {
-                    URL.revokeObjectURL(
-                        url
-                    );
-                }
-            );
-
-        };
-    }, [imagePreviews]);
-
-    /* =========================================================
-       LOADING
-    ========================================================= */
-
-    if (loadingProduct) {
-        return (
-            <div className="container py-5 text-center">
-                <div
-                    className="spinner-border"
-                    role="status"
-                />
-
-                <p className="mt-3">
-                    Loading product...
-                </p>
-            </div>
-        );
-    }
-
-    /* =========================================================
-       UI
-    ========================================================= */
-
     return (
-        <div className="container py-4">
+        <div className="container-fluid">
 
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-4">
+                {isEdit ? "Edit Product" : "Add New Product"}
+            </h2>
 
-                <div>
-                    <h2 className="mb-1">
-                        {isEditMode
-                            ? "Edit Product"
-                            : "Add Product"}
-                    </h2>
+            <form onSubmit={handleSubmit(onSubmit)}>
 
-                    <p className="text-muted mb-0">
-                        {isEditMode
-                            ? "Update product information"
-                            : "Create a new product"}
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    className="btn btn-outline-dark"
-                    onClick={() =>
-                        navigate(
-                            "/admin/products"
-                        )
-                    }
-                >
-                    Back
-                </button>
-
-            </div>
-
-            <form
-                onSubmit={handleSubmit(
-                    onSubmit
-                )}
-            >
-
-                {/* =================================================
-                   BASIC INFORMATION
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
+                <div className="card shadow-sm">
 
                     <div className="card-body">
-
-                        <h5 className="mb-4">
-                            Basic Information
-                        </h5>
-
-                        <div className="row g-3">
-
-                            {/* NAME */}
-
-                            <div className="col-md-6">
-
-                                <label className="form-label">
-                                    Product Name *
-                                </label>
-
-                                <input
-                                    type="text"
-                                    className={`form-control ${
-                                        errors.name
-                                            ? "is-invalid"
-                                            : ""
-                                    }`}
-                                    {...register(
-                                        "name",
-                                        {
-                                            required:
-                                                "Product name is required",
-                                        }
-                                    )}
-                                />
-
-                                {errors.name && (
-                                    <div className="invalid-feedback">
-                                        {
-                                            errors.name
-                                                .message
-                                        }
-                                    </div>
-                                )}
-
-                            </div>
-
-                            {/* SKU */}
-
-                            <div className="col-md-6">
-
-                                <label className="form-label">
-                                    SKU *
-                                </label>
-
-                                <input
-                                    type="text"
-                                    className={`form-control ${
-                                        errors.sku
-                                            ? "is-invalid"
-                                            : ""
-                                    }`}
-                                    {...register(
-                                        "sku",
-                                        {
-                                            required:
-                                                "SKU is required",
-                                        }
-                                    )}
-                                />
-
-                                {errors.sku && (
-                                    <div className="invalid-feedback">
-                                        {
-                                            errors.sku
-                                                .message
-                                        }
-                                    </div>
-                                )}
-
-                            </div>
-
-                            {/* DESCRIPTION */}
-
-                            <div className="col-12">
-
-                                <label className="form-label">
-                                    Description *
-                                </label>
-
-                                <textarea
-                                    rows="5"
-                                    className={`form-control ${
-                                        errors.description
-                                            ? "is-invalid"
-                                            : ""
-                                    }`}
-                                    {...register(
-                                        "description",
-                                        {
-                                            required:
-                                                "Description is required",
-                                        }
-                                    )}
-                                />
-
-                                {errors.description && (
-                                    <div className="invalid-feedback">
-                                        {
-                                            errors
-                                                .description
-                                                .message
-                                        }
-                                    </div>
-                                )}
-
-                            </div>
-
-                            {/* BRAND */}
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Brand
-                                </label>
-
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    {...register(
-                                        "brand"
-                                    )}
-                                />
-
-                            </div>
-
-                            {/* GENDER */}
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Gender
-                                </label>
-
-                                <select
-                                    className="form-select"
-                                    {...register(
-                                        "gender"
-                                    )}
-                                >
-                                    <option value="Unisex">
-                                        Unisex
-                                    </option>
-
-                                    <option value="Men">
-                                        Men
-                                    </option>
-
-                                    <option value="Women">
-                                        Women
-                                    </option>
-
-                                    <option value="Kids">
-                                        Kids
-                                    </option>
-                                </select>
-
-                            </div>
-
-                            {/* CATEGORY */}
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Category *
-                                </label>
-
-                                <input
-                                    type="text"
-                                    className={`form-control ${
-                                        errors.category
-                                            ? "is-invalid"
-                                            : ""
-                                    }`}
-                                    {...register(
-                                        "category",
-                                        {
-                                            required:
-                                                "Category is required",
-                                        }
-                                    )}
-                                />
-
-                                {errors.category && (
-                                    <div className="invalid-feedback">
-                                        {
-                                            errors
-                                                .category
-                                                .message
-                                        }
-                                    </div>
-                                )}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* =================================================
-                   PRICE / STOCK
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
-
-                    <div className="card-body">
-
-                        <h5 className="mb-4">
-                            Pricing & Stock
-                        </h5>
-
-                        <div className="row g-3">
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Price *
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className={`form-control ${
-                                        errors.price
-                                            ? "is-invalid"
-                                            : ""
-                                    }`}
-                                    {...register(
-                                        "price",
-                                        {
-                                            required:
-                                                "Price is required",
-                                            min: {
-                                                value: 0,
-                                                message:
-                                                    "Price cannot be negative",
-                                            },
-                                        }
-                                    )}
-                                />
-
-                                {errors.price && (
-                                    <div className="invalid-feedback">
-                                        {
-                                            errors
-                                                .price
-                                                .message
-                                        }
-                                    </div>
-                                )}
-
-                            </div>
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Discount (%)
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    className="form-control"
-                                    {...register(
-                                        "discount"
-                                    )}
-                                />
-
-                            </div>
-
-                            <div className="col-md-4">
-
-                                <label className="form-label">
-                                    Stock
-                                </label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="form-control"
-                                    {...register(
-                                        "stock"
-                                    )}
-                                />
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* =================================================
-                   SIZES
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
-
-                    <div className="card-body">
-
-                        <h5 className="mb-3">
-                            Sizes
-                        </h5>
-
-                        <div className="d-flex gap-2 mb-3">
-
-                            <input
-                                type="number"
-                                className="form-control"
-                                placeholder="Enter size"
-                                value={sizeInput}
-                                onChange={(e) =>
-                                    setSizeInput(
-                                        e.target.value
-                                    )
-                                }
-                            />
-
-                            <button
-                                type="button"
-                                className="btn btn-dark"
-                                onClick={addSize}
-                            >
-                                Add
-                            </button>
-
-                        </div>
-
-                        {sizes.length > 0 && (
-
-                            <div className="table-responsive">
-
-                                <table className="table align-middle">
-
-                                    <thead>
-                                        <tr>
-                                            <th>
-                                                Size
-                                            </th>
-
-                                            <th>
-                                                Stock
-                                            </th>
-
-                                            <th>
-                                                Action
-                                            </th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody>
-
-                                        {sizes.map(
-                                            (
-                                                item,
-                                                index
-                                            ) => (
-
-                                                <tr
-                                                    key={`${item.size}-${index}`}
-                                                >
-
-                                                    <td>
-                                                        {item.size}
-                                                    </td>
-
-                                                    <td>
-
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            className="form-control"
-                                                            value={
-                                                                item.stock ??
-                                                                0
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                updateSizeStock(
-                                                                    index,
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-
-                                                    </td>
-
-                                                    <td>
-
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-sm btn-outline-danger"
-                                                            onClick={() =>
-                                                                removeSize(
-                                                                    index
-                                                                )
-                                                            }
-                                                        >
-                                                            Remove
-                                                        </button>
-
-                                                    </td>
-
-                                                </tr>
-
-                                            )
-                                        )}
-
-                                    </tbody>
-
-                                </table>
-
-                            </div>
-
-                        )}
-
-                    </div>
-
-                </div>
-
-                {/* =================================================
-                   COLORS
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
-
-                    <div className="card-body">
-
-                        <h5 className="mb-3">
-                            Colors
-                        </h5>
-
-                        <div className="d-flex gap-2 mb-3">
-
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Enter color"
-                                value={colorInput}
-                                onChange={(e) =>
-                                    setColorInput(
-                                        e.target.value
-                                    )
-                                }
-                            />
-
-                            <button
-                                type="button"
-                                className="btn btn-dark"
-                                onClick={addColor}
-                            >
-                                Add
-                            </button>
-
-                        </div>
-
-                        <div className="d-flex flex-wrap gap-2">
-
-                            {colors.map(
-                                (
-                                    color,
-                                    index
-                                ) => (
-
-                                    <div
-                                        key={`${color}-${index}`}
-                                        className="badge bg-light text-dark border p-2"
-                                    >
-
-                                        {color}
-
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm p-0 ms-2"
-                                            onClick={() =>
-                                                removeColor(
-                                                    index
-                                                )
-                                            }
-                                        >
-                                            ×
-                                        </button>
-
-                                    </div>
-
-                                )
-                            )}
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* =================================================
-                   PRODUCT IMAGES
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
-
-                    <div className="card-body">
-
-                        <h5 className="mb-2">
-                            Product Images
-                        </h5>
-
-                        <p className="text-muted small mb-3">
-                            You can upload up to 5 images.
-                            Large images are automatically
-                            compressed before upload.
-                        </p>
-
-                        <input
-                            type="file"
-                            className="form-control"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImages}
-                            disabled={
-                                compressingImages
-                            }
-                        />
-
-                        {compressingImages && (
-                            <div className="mt-3">
-
-                                <div className="d-flex align-items-center">
-
-                                    <div
-                                        className="spinner-border spinner-border-sm"
-                                        role="status"
-                                    />
-
-                                    <span className="ms-2">
-                                        Compressing images...
-                                    </span>
-
-                                </div>
-
-                            </div>
-                        )}
-
-                        {/* =================================================
-                           EXISTING IMAGES
-                        ================================================= */}
-
-                        {existingImages.length >
-                            0 && (
-
-                            <div className="mt-4">
-
-                                <h6>
-                                    Existing Images
-                                </h6>
-
-                                <div className="d-flex flex-wrap gap-3">
-
-                                    {existingImages.map(
-                                        (
-                                            image,
-                                            index
-                                        ) => (
-
-                                            <div
-                                                key={
-                                                    image.public_id ||
-                                                    image._id ||
-                                                    index
-                                                }
-                                                style={{
-                                                    position:
-                                                        "relative",
-                                                    width: 140,
-                                                }}
-                                            >
-
-                                                <img
-                                                    src={
-                                                        image.url
-                                                    }
-                                                    alt={`Product ${
-                                                        index +
-                                                        1
-                                                    }`}
-                                                    style={{
-                                                        width:
-                                                            "140px",
-                                                        height:
-                                                            "160px",
-                                                        objectFit:
-                                                            "cover",
-                                                        borderRadius:
-                                                            "8px",
-                                                    }}
-                                                />
-
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-danger btn-sm"
-                                                    style={{
-                                                        position:
-                                                            "absolute",
-                                                        top: 5,
-                                                        right: 5,
-                                                    }}
-                                                    onClick={() =>
-                                                        removeExistingImage(
-                                                            index
-                                                        )
-                                                    }
-                                                >
-                                                    ×
-                                                </button>
-
-                                            </div>
-
-                                        )
-                                    )}
-
-                                </div>
-
-                            </div>
-                        )}
-
-                        {/* =================================================
-                           NEW IMAGE PREVIEWS
-                        ================================================= */}
-
-                        {imagePreviews.length >
-                            0 && (
-
-                            <div className="mt-4">
-
-                                <h6>
-                                    New Images
-                                </h6>
-
-                                <div className="d-flex flex-wrap gap-3">
-
-                                    {imagePreviews.map(
-                                        (
-                                            preview,
-                                            index
-                                        ) => (
-
-                                            <div
-                                                key={`${preview}-${index}`}
-                                                style={{
-                                                    position:
-                                                        "relative",
-                                                    width: 140,
-                                                }}
-                                            >
-
-                                                <img
-                                                    src={
-                                                        preview
-                                                    }
-                                                    alt={`New product ${
-                                                        index +
-                                                        1
-                                                    }`}
-                                                    style={{
-                                                        width:
-                                                            "140px",
-                                                        height:
-                                                            "160px",
-                                                        objectFit:
-                                                            "cover",
-                                                        borderRadius:
-                                                            "8px",
-                                                    }}
-                                                />
-
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-danger btn-sm"
-                                                    style={{
-                                                        position:
-                                                            "absolute",
-                                                        top: 5,
-                                                        right: 5,
-                                                    }}
-                                                    onClick={() =>
-                                                        removeNewImage(
-                                                            index
-                                                        )
-                                                    }
-                                                >
-                                                    ×
-                                                </button>
-
-                                            </div>
-
-                                        )
-                                    )}
-
-                                </div>
-
-                            </div>
-                        )}
-
-                    </div>
-
-                </div>
-
-                {/* =================================================
-                   OPTIONS
-                ================================================= */}
-
-                <div className="card shadow-sm mb-4">
-
-                    <div className="card-body">
-
-                        <h5 className="mb-4">
-                            Product Settings
-                        </h5>
 
                         <div className="row">
 
-                            <div className="col-md-6">
+                            {/* Product Name */}
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Product Name</label>
 
-                                <div className="form-check">
-
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="featured"
-                                        {...register(
-                                            "featured"
-                                        )}
-                                    />
-
-                                    <label
-                                        className="form-check-label"
-                                        htmlFor="featured"
-                                    >
-                                        Featured Product
-                                    </label>
-
-                                </div>
-
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("name")}
+                                />
                             </div>
 
-                            <div className="col-md-6">
+                            {/* Category */}
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Category</label>
 
-                                <div className="form-check">
+                                <select
+                                    className="form-select"
+                                    {...register("category")}
+                                >
+                                    <option value="">Select Category</option>
 
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="isActive"
-                                        defaultChecked
-                                        {...register(
-                                            "isActive"
-                                        )}
-                                    />
+                                    {categories.map((cat) => (
+                                        <option key={cat._id} value={cat._id}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                    <label
-                                        className="form-check-label"
-                                        htmlFor="isActive"
-                                    >
-                                        Active Product
-                                    </label>
+                            {/* Brand */}
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Brand</label>
+
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("brand")}
+                                />
+                            </div>
+
+                            {/* Gender */}
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Gender</label>
+
+                                <select
+                                    className="form-select"
+                                    {...register("gender")}
+                                >
+                                    <option value="Men">Men</option>
+                                    <option value="Women">Women</option>
+                                    <option value="Kids">Kids</option>
+                                    <option value="Unisex">Unisex</option>
+                                </select>
+                            </div>
+
+                            {/* Price */}
+                            <div className="col-md-4 mb-3">
+                                <label className="form-label">Price</label>
+
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    {...register("price")}
+                                />
+                            </div>
+
+                            {/* Discount Price */}
+                            {/* Discount */}
+                            <div className="col-md-4 mb-3">
+                                <label className="form-label">Discount (%)</label>
+
+                                <select
+                                    className="form-select"
+                                    {...register("discount")}
+                                >
+                                    <option value="0">No Discount</option>
+                                    <option value="5">5%</option>
+                                    <option value="10">10%</option>
+                                    <option value="15">15%</option>
+                                    <option value="20">20%</option>
+                                    <option value="25">25%</option>
+                                    <option value="30">30%</option>
+                                    <option value="40">40%</option>
+                                    <option value="50">50%</option>
+                                    <option value="60">60%</option>
+                                    <option value="70">70%</option>
+                                    <option value="80">80%</option>
+                                </select>
+                            </div>
+
+                            {/* Stock */}
+                            <div className="col-md-4 mb-3">
+                                <label className="form-label">Stock</label>
+
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    {...register("stock")}
+                                />
+                            </div>
+
+
+
+                            <div className="col-12 mb-4">
+                                {/* Headings */}
+                                <div className="row mb-2">
+                                    <div className="col-md-5">
+                                        <label className="form-label fw-bold">
+                                            Product Size
+                                        </label>
+                                    </div>
+
+                                    <div className="col-md-4">
+                                        <label className="form-label fw-bold">
+                                            Product Stock
+                                        </label>
+                                    </div>
+
+                                    <div className="col-md-2"></div>
+                                </div>
+
+                                {/* Rows */}
+                                {sizes.map((item, index) => (
+                                    <div className="row mb-3 align-items-center" key={index}>
+                                        <div className="col-md-5">
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                placeholder="Size"
+                                                value={item.size}
+                                                onChange={(e) =>
+                                                    handleSizeChange(index, "size", e.target.value)
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="col-md-4">
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                placeholder="Stock"
+                                                value={item.stock}
+                                                onChange={(e) =>
+                                                    handleSizeChange(index, "stock", e.target.value)
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                            <button
+                                                type="button"
+                                                className="btn btn-danger w-100"
+                                                onClick={() => removeSizeRow(index)}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    className="btn btn-success mt-2"
+                                    onClick={addSizeRow}
+                                >
+                                    + Add Size
+                                </button>
+                            </div>
+
+
+
+
+                            {/* Description */}
+                            <div className="col-12 mb-3">
+                                <label className="form-label">Description</label>
+
+                                <textarea
+                                    rows="5"
+                                    className="form-control"
+                                    {...register("description")}
+                                ></textarea>
+                            </div>
+
+                            {/* Images */}
+                            <div className="col-12 mb-3">
+                                <label className="form-label">Product Images</label>
+
+                                {isEdit && existingImages.length > 0 && (
+
+                                    <div className="row mb-3">
+
+                                        {existingImages.map((img) => (
+                                            <div
+                                                key={img.public_id}
+                                                className="col-md-2 position-relative mb-3"
+                                            >
+
+                                                <img
+                                                    src={img.url}
+                                                    alt=""
+                                                    className="img-fluid rounded border"
+                                                    style={{
+                                                        width: "120px",
+                                                        height: "120px",
+                                                        objectFit: "cover",
+                                                    }}
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-danger btn-sm position-absolute top-0 end-0"
+                                                    onClick={() => removeImage(img.public_id)}
+                                                >
+                                                    ×
+                                                </button>
+
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                )}
+
+                                <input
+                                    type="file"
+                                    multiple
+                                    className="form-control"
+                                    {...register("images")}
+                                    onChange={(e) => {
+                                        handleImages(e);
+                                    }}
+                                />
+
+                                {/* Preview */}
+                                <div className="row mt-3">
+
+                                    {preview.map((img, index) => (
+                                        <div className="col-md-2 col-4 mb-3" key={index}>
+
+                                            <img
+                                                src={img}
+                                                alt="Preview"
+                                                className="img-fluid rounded border"
+                                                style={{
+                                                    width: "120px",
+                                                    height: "120px",
+                                                    objectFit: "cover",
+                                                }}
+                                            />
+
+                                        </div>
+                                    ))}
 
                                 </div>
 
@@ -1607,54 +516,18 @@ export default function AddProduct() {
 
                 </div>
 
-                {/* =================================================
-                   SUBMIT
-                ================================================= */}
-
-                <div className="d-flex justify-content-end gap-2 mb-5">
-
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        disabled={
-                            loading ||
-                            compressingImages
-                        }
-                        onClick={() =>
-                            navigate(
-                                "/admin/products"
-                            )
-                        }
-                    >
-                        Cancel
-                    </button>
+                <div className="mt-4">
 
                     <button
                         type="submit"
-                        className="btn btn-dark px-4"
-                        disabled={
-                            loading ||
-                            compressingImages
-                        }
+                        className="btn btn-primary px-5"
+                        disabled={loading}
                     >
-
-                        {loading ? (
-                            <>
-                                <span
-                                    className="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                />
-
-                                {isEditMode
-                                    ? "Updating..."
-                                    : "Creating..."}
-                            </>
-                        ) : (
-                            isEditMode
+                        {loading
+                            ? "Saving..."
+                            : isEdit
                                 ? "Update Product"
-                                : "Create Product"
-                        )}
-
+                                : "Save Product"}
                     </button>
 
                 </div>
