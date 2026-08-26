@@ -1,16 +1,30 @@
 import api from "../../api/axios";
 
-// Get all products
+let homeSectionsRequest = null;
+
 export const getProducts = (params = {}) => {
-  return api.get("/products", { params });
+  return api.get("/products", {
+    params,
+  });
 };
 
-// Get single product
 export const getProduct = (id) => {
   return api.get(`/products/${id}`);
 };
 
-// Create product
+export const getHomeSections = () => {
+  if (!homeSectionsRequest) {
+    homeSectionsRequest = api
+      .get("/products/home-sections")
+      .catch((error) => {
+        homeSectionsRequest = null;
+        throw error;
+      });
+  }
+
+  return homeSectionsRequest;
+};
+
 export const createProduct = (formData) => {
   return api.post("/products", formData, {
     headers: {
@@ -19,7 +33,6 @@ export const createProduct = (formData) => {
   });
 };
 
-// Update product
 export const updateProduct = (id, formData) => {
   return api.put(`/products/${id}`, formData, {
     headers: {
@@ -28,13 +41,14 @@ export const updateProduct = (id, formData) => {
   });
 };
 
-// Delete product
 export const deleteProduct = (id) => {
   return api.delete(`/products/${id}`);
 };
 
-// Get related products
-export const getRelatedProducts = (categoryId, productId) => {
+export const getRelatedProducts = (
+  categoryId,
+  productId
+) => {
   return api.get(
     `/products/related/${categoryId}/${productId}`
   );

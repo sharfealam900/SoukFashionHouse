@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
@@ -6,8 +6,6 @@ import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import SEO from "../Components/SEO";
 import { getProducts } from "../features/product/productApi";
-
-
 
 export default function Shop() {
     const [products, setProducts] = useState([]);
@@ -20,143 +18,114 @@ export default function Shop() {
 
     const [showFilters, setShowFilters] = useState(false);
 
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(false);
+    const [hasPreviousPage, setHasPreviousPage] = useState(false);
+
+    const limit = 20;
+
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                setLoading(true);
-                setError("");
+        const timer = setTimeout(() => {
+            fetchProducts();
+        }, 300);
 
-                const { data } = await getProducts();
-
-                setProducts(data?.products || []);
-            } catch (err) {
-                console.error("Shop Products Error:", err);
-
-                setError(
-                    err?.response?.data?.message ||
-                    "Unable to load products."
-                );
-            } finally {
-                setLoading(false);
-            }
+        return () => {
+            clearTimeout(timer);
         };
+    }, [page, search, category, sort]);
 
-        fetchProducts();
-    }, []);
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
-    const categories = useMemo(() => {
-        const categoryMap = new Map();
-
-        products.forEach((product) => {
-            const productCategory = product?.category;
-
-            if (!productCategory) return;
-
-            const id =
-                productCategory?._id ||
-                productCategory?.id ||
-                productCategory?.name;
-
-            const name =
-                productCategory?.name ||
-                "Uncategorized";
-
-            if (id && !categoryMap.has(id)) {
-                categoryMap.set(id, {
-                    id,
-                    name,
-                });
-            }
-        });
-
-        return Array.from(categoryMap.values());
-    }, [products]);
-
-    const filteredProducts = useMemo(() => {
-        let result = [...products];
-
-        const searchValue = search.trim().toLowerCase();
-
-        if (searchValue) {
-            result = result.filter((product) => {
-                const name =
-                    product?.name?.toLowerCase() || "";
-
-                const description =
-                    product?.description?.toLowerCase() || "";
-
-                const categoryName =
-                    product?.category?.name?.toLowerCase() || "";
-
-                return (
-                    name.includes(searchValue) ||
-                    description.includes(searchValue) ||
-                    categoryName.includes(searchValue)
-                );
+            const { data } = await getProducts({
+                page,
+                limit,
+                search: search.trim(),
+                category,
+                sort,
             });
+
+            setProducts(data?.products || []);
+
+            setTotal(
+                data?.pagination?.total || 0
+            );
+
+            setTotalPages(
+                data?.pagination?.totalPages || 1
+            );
+
+            setHasNextPage(
+                Boolean(
+                    data?.pagination?.hasNextPage
+                )
+            );
+
+            setHasPreviousPage(
+                Boolean(
+                    data?.pagination?.hasPreviousPage
+                )
+            );
+        } catch (err) {
+            console.error(
+                "Shop Products Error:",
+                err
+            );
+
+            setError(
+                err?.response?.data?.message ||
+                "Unable to load products."
+            );
+
+            setProducts([]);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        if (category !== "all") {
-            result = result.filter((product) => {
-                const productCategory = product?.category;
+    const handleSearchChange = (value) => {
+        setSearch(value);
+        setPage(1);
+    };
 
-                const categoryId =
-                    productCategory?._id ||
-                    productCategory?.id ||
-                    productCategory?.name;
+    const handleCategoryChange = (value) => {
+        setCategory(value);
+        setPage(1);
+    };
 
-                return String(categoryId) === String(category);
-            });
-        }
+    const handleSortChange = (value) => {
+        setSort(value);
+        setPage(1);
+    };
 
-        switch (sort) {
-            case "price-low":
-                result.sort(
-                    (a, b) =>
-                        Number(a?.price || 0) -
-                        Number(b?.price || 0)
-                );
-                break;
-
-            case "price-high":
-                result.sort(
-                    (a, b) =>
-                        Number(b?.price || 0) -
-                        Number(a?.price || 0)
-                );
-                break;
-
-            case "newest":
-                result.sort((a, b) => {
-                    const dateA = new Date(
-                        a?.createdAt || 0
-                    ).getTime();
-
-                    const dateB = new Date(
-                        b?.createdAt || 0
-                    ).getTime();
-
-                    return dateB - dateA;
-                });
-                break;
-
-            case "featured":
-            default:
-                break;
-        }
-
-        return result;
-    }, [products, search, category, sort]);
+    const clearFilters = () => {
+        setSearch("");
+        setCategory("all");
+        setSort("featured");
+        setPage(1);
+    };
 
     const getProductPrice = (product) => {
-        const price = Number(product?.price || 0);
-        const discount = Number(product?.discount || 0);
+        const price = Number(
+            product?.price || 0
+        );
+
+        const discount = Number(
+            product?.discount || 0
+        );
 
         if (discount <= 0) {
             return price;
         }
 
-        return price - (price * discount) / 100;
+        return (
+            price -
+            (price * discount) / 100
+        );
     };
 
     const getProductImage = (product) => {
@@ -164,7 +133,8 @@ export default function Shop() {
             return "/logo.jpg";
         }
 
-        const firstImage = product.images[0];
+        const firstImage =
+            product.images[0];
 
         if (typeof firstImage === "string") {
             return firstImage;
@@ -175,12 +145,6 @@ export default function Shop() {
             firstImage?.secure_url ||
             "/logo.jpg"
         );
-    };
-
-    const clearFilters = () => {
-        setSearch("");
-        setCategory("all");
-        setSort("featured");
     };
 
     const hasActiveFilters =
@@ -201,19 +165,18 @@ export default function Shop() {
 
             <main className="shop-page">
 
-                {/* HERO */}
-
                 <section className="shop-hero">
-
                     <div className="shop-hero-content">
-
                         <span className="shop-eyebrow">
                             SOUK COLLECTION
                         </span>
 
                         <h1>
                             Discover Your
-                            <span> Signature Style</span>
+                            <span>
+                                {" "}
+                                Signature Style
+                            </span>
                         </h1>
 
                         <p>
@@ -221,16 +184,10 @@ export default function Shop() {
                             elegant fashion, timeless fabrics
                             and modern modest silhouettes.
                         </p>
-
                     </div>
-
                 </section>
 
-                {/* SHOP CONTENT */}
-
                 <section className="shop-container">
-
-                    {/* TOP BAR */}
 
                     <div className="shop-topbar">
 
@@ -245,8 +202,8 @@ export default function Shop() {
 
                             {!loading && (
                                 <p>
-                                    {filteredProducts.length}{" "}
-                                    {filteredProducts.length === 1
+                                    {total}{" "}
+                                    {total === 1
                                         ? "product"
                                         : "products"}
                                 </p>
@@ -262,7 +219,9 @@ export default function Shop() {
                                 )
                             }
                         >
-                            <SlidersHorizontal size={18} />
+                            <SlidersHorizontal
+                                size={18}
+                            />
 
                             <span>
                                 Filters
@@ -271,8 +230,6 @@ export default function Shop() {
 
                     </div>
 
-                    {/* FILTER BAR */}
-
                     <div
                         className={`shop-filters ${
                             showFilters
@@ -280,8 +237,6 @@ export default function Shop() {
                                 : ""
                         }`}
                     >
-
-                        {/* SEARCH */}
 
                         <div className="shop-search">
 
@@ -292,7 +247,7 @@ export default function Shop() {
                                 placeholder="Search products..."
                                 value={search}
                                 onChange={(e) =>
-                                    setSearch(
+                                    handleSearchChange(
                                         e.target.value
                                     )
                                 }
@@ -302,7 +257,9 @@ export default function Shop() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        setSearch("")
+                                        handleSearchChange(
+                                            ""
+                                        )
                                     }
                                     aria-label="Clear search"
                                 >
@@ -312,14 +269,12 @@ export default function Shop() {
 
                         </div>
 
-                        {/* CATEGORY */}
-
                         <div className="shop-category-filter">
 
                             <select
                                 value={category}
                                 onChange={(e) =>
-                                    setCategory(
+                                    handleCategoryChange(
                                         e.target.value
                                     )
                                 }
@@ -327,29 +282,16 @@ export default function Shop() {
                                 <option value="all">
                                     All Categories
                                 </option>
-
-                                {categories.map(
-                                    (item) => (
-                                        <option
-                                            key={item.id}
-                                            value={item.id}
-                                        >
-                                            {item.name}
-                                        </option>
-                                    )
-                                )}
                             </select>
 
                         </div>
-
-                        {/* SORT */}
 
                         <div className="shop-sort">
 
                             <select
                                 value={sort}
                                 onChange={(e) =>
-                                    setSort(
+                                    handleSortChange(
                                         e.target.value
                                     )
                                 }
@@ -385,24 +327,18 @@ export default function Shop() {
 
                     </div>
 
-                    {/* ERROR */}
-
                     {error && (
                         <div className="shop-error">
                             <p>{error}</p>
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    window.location.reload()
-                                }
+                                onClick={fetchProducts}
                             >
                                 Try Again
                             </button>
                         </div>
                     )}
-
-                    {/* LOADING */}
 
                     {loading && (
                         <div className="shop-product-grid">
@@ -414,27 +350,22 @@ export default function Shop() {
                                     className="shop-skeleton-card"
                                     key={index}
                                 >
-                                    <div className="shop-skeleton-image"></div>
-
-                                    <div className="shop-skeleton-line"></div>
-
-                                    <div className="shop-skeleton-small"></div>
-
-                                    <div className="shop-skeleton-price"></div>
+                                    <div className="shop-skeleton-image" />
+                                    <div className="shop-skeleton-line" />
+                                    <div className="shop-skeleton-small" />
+                                    <div className="shop-skeleton-price" />
                                 </div>
                             ))}
 
                         </div>
                     )}
 
-                    {/* PRODUCTS */}
-
                     {!loading &&
                         !error &&
-                        filteredProducts.length > 0 && (
+                        products.length > 0 && (
                             <div className="shop-product-grid">
 
-                                {filteredProducts.map(
+                                {products.map(
                                     (product) => {
                                         const finalPrice =
                                             getProductPrice(
@@ -444,13 +375,13 @@ export default function Shop() {
                                         const originalPrice =
                                             Number(
                                                 product?.price ||
-                                                    0
+                                                0
                                             );
 
                                         const discount =
                                             Number(
                                                 product?.discount ||
-                                                    0
+                                                0
                                             );
 
                                         return (
@@ -461,8 +392,6 @@ export default function Shop() {
                                                 to={`/products/${product.slug}`}
                                                 className="shop-product-card"
                                             >
-
-                                                {/* IMAGE */}
 
                                                 <div className="shop-product-image">
 
@@ -497,8 +426,6 @@ export default function Shop() {
                                                     )}
 
                                                 </div>
-
-                                                {/* INFO */}
 
                                                 <div className="shop-product-info">
 
@@ -538,6 +465,7 @@ export default function Shop() {
                                                     </div>
 
                                                     <div className="shop-product-view">
+
                                                         <span>
                                                             View
                                                             Product
@@ -546,6 +474,7 @@ export default function Shop() {
                                                         <span>
                                                             →
                                                         </span>
+
                                                     </div>
 
                                                 </div>
@@ -558,12 +487,9 @@ export default function Shop() {
                             </div>
                         )}
 
-                    {/* EMPTY */}
-
                     {!loading &&
                         !error &&
-                        filteredProducts.length ===
-                            0 && (
+                        products.length === 0 && (
                             <div className="shop-empty">
 
                                 <div className="shop-empty-icon">
@@ -585,6 +511,55 @@ export default function Shop() {
                                     onClick={clearFilters}
                                 >
                                     View All Products
+                                </button>
+
+                            </div>
+                        )}
+
+                    {!loading &&
+                        !error &&
+                        totalPages > 1 && (
+                            <div className="shop-pagination">
+
+                                <button
+                                    type="button"
+                                    disabled={
+                                        !hasPreviousPage
+                                    }
+                                    onClick={() =>
+                                        setPage(
+                                            (current) =>
+                                                Math.max(
+                                                    current - 1,
+                                                    1
+                                                )
+                                        )
+                                    }
+                                >
+                                    Previous
+                                </button>
+
+                                <span>
+                                    Page {page} of{" "}
+                                    {totalPages}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    disabled={
+                                        !hasNextPage
+                                    }
+                                    onClick={() =>
+                                        setPage(
+                                            (current) =>
+                                                Math.min(
+                                                    current + 1,
+                                                    totalPages
+                                                )
+                                        )
+                                    }
+                                >
+                                    Next
                                 </button>
 
                             </div>

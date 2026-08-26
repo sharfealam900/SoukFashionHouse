@@ -50,20 +50,35 @@ export const createCategory = async (req, res) => {
 // Get all categories
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().sort({ name: 1 });
-    res.status(200).json({
+    const categories = await Category.find({
+      isActive: true,
+    })
+      .select("_id name slug")
+      .sort({ name: 1 })
+      .lean();
+
+    res.set(
+      "Cache-Control",
+      "public, max-age=300, s-maxage=600, stale-while-revalidate=1800"
+    );
+
+    return res.status(200).json({
       success: true,
       count: categories.length,
       categories,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "GET CATEGORIES ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to load categories",
     });
   }
 };
-
 // Get single category
 export const getCategory = async (req, res) => {
   try {

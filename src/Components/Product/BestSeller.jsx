@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 
-import api from "../../api/axios";
+import { getHomeSections } from "../../features/product/productApi";
 import ProductCard from "./ProductCard";
 
 import "swiper/css";
@@ -23,30 +23,43 @@ export default function BestSeller() {
     const nextRef = useRef(null);
 
     useEffect(() => {
-        getProducts();
+        let mounted = true;
+
+        const loadProducts = async () => {
+            try {
+                const { data } =
+                    await getHomeSections();
+
+                if (mounted) {
+                    setProducts(
+                        data?.bestSellers || []
+                    );
+                }
+            } catch (error) {
+                if (mounted) {
+                    setProducts([]);
+                }
+
+                console.error(
+                    "Best Seller Error:",
+                    error.response?.data ||
+                    error.message
+                );
+            }
+        };
+
+        loadProducts();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
-
-    const getProducts = async () => {
-        try {
-            const { data } = await api.get("/products/best-sellers");
-
-            setProducts(data.products || []);
-        } catch (error) {
-            console.error(
-                "Best Seller Error:",
-                error.response?.data || error.message
-            );
-        }
-    };
-
     return (
         <section className="best-seller-section">
 
             <div className="container best-seller-container">
 
-                {/* ==========================================
-                    INTRO
-                ========================================== */}
+   
 
                 <div className="best-seller-intro">
 

@@ -118,7 +118,7 @@ export const createProduct = async (req, res) => {
 
 
 
-   
+
 
     const categoryExists = await Category.findById(category);
 
@@ -199,24 +199,153 @@ export const createProduct = async (req, res) => {
 
 
 
-
 export const getProducts = async (req, res) => {
   try {
-    const products = await Product.find()
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 });
+    const page = Math.max(
+      parseInt(req.query.page, 10) || 1,
+      1
+    );
+
+    const limit = Math.min(
+      Math.max(
+        parseInt(req.query.limit, 10) || 20,
+        1
+      ),
+      40
+    );
+
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : "";
+
+    const category =
+      typeof req.query.category === "string"
+        ? req.query.category.trim()
+        : "";
+
+    const sort =
+      typeof req.query.sort === "string"
+        ? req.query.sort
+        : "featured";
+
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      isActive: true,
+    };
+
+    if (category && category !== "all") {
+      filter.category = category;
+    }
+
+    if (search) {
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      const searchRegex = new RegExp(
+        escapedSearch,
+        "i"
+      );
+
+      filter.$or = [
+        {
+          name: searchRegex,
+        },
+        {
+          description: searchRegex,
+        },
+      ];
+    }
+
+    let sortOption = {
+      featured: -1,
+      createdAt: -1,
+    };
+
+    switch (sort) {
+      case "newest":
+        sortOption = {
+          createdAt: -1,
+        };
+        break;
+
+      case "price-low":
+        sortOption = {
+          price: 1,
+          _id: 1,
+        };
+        break;
+
+      case "price-high":
+        sortOption = {
+          price: -1,
+          _id: 1,
+        };
+        break;
+
+      case "featured":
+      default:
+        sortOption = {
+          featured: -1,
+          createdAt: -1,
+        };
+        break;
+    }
+
+    const [products, total] =
+      await Promise.all([
+        Product.find(filter)
+          .select(
+            "name slug category price discount stock images featured createdAt"
+          )
+          .populate(
+            "category",
+            "name slug"
+          )
+          .sort(sortOption)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+
+        Product.countDocuments(filter),
+      ]);
+
+    const totalPages = Math.ceil(
+      total / limit
+    );
+
+    res.set(
+      "Cache-Control",
+      "public, max-age=10, s-maxage=30, stale-while-revalidate=120"
+    );
 
     return res.status(200).json({
       success: true,
-      count: products.length,
       products,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage:
+          page < totalPages,
+        hasPreviousPage:
+          page > 1,
+      },
     });
   } catch (error) {
-    console.error("GET PRODUCTS ERROR:", error);
+    console.error(
+      "GET PRODUCTS ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        "Failed to load products",
     });
   }
 };
@@ -499,43 +628,172 @@ export const getRelatedProducts = async (req, res) => {
 
 export const getBestSellers = async (req, res) => {
   try {
-    const products = await Product.find({ isActive: true })
+    const products = await Product.find({
+      isActive: true,
+    })
+      .select(
+        "name slug category price discount stock totalSold sizes colors featured averageRating images"
+      )
       .populate("category", "name slug")
-      .sort({ totalSold: -1, createdAt: -1 })
-      .limit(8);
+      .sort({
+        totalSold: -1,
+        createdAt: -1,
+      })
+      .limit(8)
+      .lean();
 
-    res.status(200).json({
+    res.set(
+      "Cache-Control",
+      "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+    );
+
+    return res.status(200).json({
       success: true,
       products,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "GET BEST SELLERS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        "Failed to load best sellers",
     });
   }
 };
-
-// ================= NEW ARRIVALS =================
 
 export const getNewArrivals = async (req, res) => {
   try {
-    const products = await Product.find({ isActive: true })
+    const products = await Product.find({
+      isActive: true,
+    })
+      .select(
+        "name slug category price discount stock totalSold sizes colors featured averageRating images"
+      )
       .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .limit(8);
+      .sort({
+        createdAt: -1,
+      })
+      .limit(8)
+      .lean();
 
-    res.status(200).json({
+    res.set(
+      "Cache-Control",
+      "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+    );
+
+    return res.status(200).json({
       success: true,
       products,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "GET NEW ARRIVALS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        "Failed to load new arrivals",
     });
   }
 };
+let homeSectionsCache = null;
+let homeSectionsCacheTime = 0;
+
+export const getHomeSections = async (req, res) => {
+  try {
+    const now = Date.now();
+
+    if (
+      homeSectionsCache &&
+      now - homeSectionsCacheTime < 30000
+    ) {
+      res.set(
+        "Cache-Control",
+        "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+      );
+
+      return res.status(200).json({
+        success: true,
+        bestSellers:
+          homeSectionsCache.bestSellers,
+        newArrivals:
+          homeSectionsCache.newArrivals,
+      });
+    }
+
+    const [bestSellers, newArrivals] =
+      await Promise.all([
+        Product.find({
+          isActive: true,
+        })
+          .select(
+            "name slug category price discount stock totalSold sizes colors featured averageRating images"
+          )
+          .populate(
+            "category",
+            "name slug"
+          )
+          .sort({
+            totalSold: -1,
+            createdAt: -1,
+          })
+          .limit(8)
+          .lean(),
+
+        Product.find({
+          isActive: true,
+        })
+          .select(
+            "name slug category price discount stock totalSold sizes colors featured averageRating images"
+          )
+          .populate(
+            "category",
+            "name slug"
+          )
+          .sort({
+            createdAt: -1,
+          })
+          .limit(8)
+          .lean(),
+      ]);
+
+    homeSectionsCache = {
+      bestSellers,
+      newArrivals,
+    };
+
+    homeSectionsCacheTime = now;
+
+    res.set(
+      "Cache-Control",
+      "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+    );
+
+    return res.status(200).json({
+      success: true,
+      bestSellers,
+      newArrivals,
+    });
+  } catch (error) {
+    console.error(
+      "GET HOME SECTIONS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to load homepage products",
+    });
+  }
+};
+
 
 
 

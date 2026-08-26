@@ -32,7 +32,12 @@ const productSchema = new mongoose.Schema(
 
     gender: {
       type: String,
-      enum: ["Men", "Women", "Kids", "Unisex"],
+      enum: [
+        "Men",
+        "Women",
+        "Kids",
+        "Unisex",
+      ],
       default: "Unisex",
     },
 
@@ -118,6 +123,20 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-const Product = mongoose.model("Product", productSchema);
+productSchema.index({
+  isActive: 1,
+  totalSold: -1,
+  createdAt: -1,
+});
+
+productSchema.index({
+  isActive: 1,
+  createdAt: -1,
+});
+
+const Product = mongoose.model(
+  "Product",
+  productSchema
+);
 
 export default Product;

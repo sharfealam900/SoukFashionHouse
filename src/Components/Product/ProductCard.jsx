@@ -41,9 +41,7 @@ export default function ProductCard({ product }) {
     );
 
 
-    /* =========================================================
-       IMAGES
-    ========================================================= */
+
 
     const images = useMemo(() => {
 
@@ -79,9 +77,7 @@ export default function ProductCard({ product }) {
         useState(false);
 
 
-    /* =========================================================
-       PRODUCT SIZES
-    ========================================================= */
+
 
     const getProductSizes = () => {
 
@@ -153,9 +149,7 @@ export default function ProductCard({ product }) {
         : Number(product?.stock || 0) <= 0;
 
 
-    /* =========================================================
-       PRICE
-    ========================================================= */
+
 
     const discount = Number(
         product?.discount || 0
@@ -170,9 +164,7 @@ export default function ProductCard({ product }) {
         (originalPrice * discount) / 100;
 
 
-    /* =========================================================
-       IMAGE DATA
-    ========================================================= */
+
 
     const currentImageData =
         images[currentImage] || null;
@@ -186,10 +178,6 @@ export default function ProductCard({ product }) {
         images[nextImageIndex] || null;
 
 
-    /* =========================================================
-       KEEP IMAGE INDEX VALID
-    ========================================================= */
-
     useEffect(() => {
 
         if (currentImage >= images.length) {
@@ -199,9 +187,6 @@ export default function ProductCard({ product }) {
     }, [currentImage, images.length]);
 
 
-    /* =========================================================
-       PRELOAD NEXT IMAGE
-    ========================================================= */
 
     useEffect(() => {
 
@@ -221,10 +206,6 @@ export default function ProductCard({ product }) {
         nextImageData?.url,
     ]);
 
-
-    /* =========================================================
-       HOVER IMAGE SLIDER
-    ========================================================= */
 
     useEffect(() => {
 

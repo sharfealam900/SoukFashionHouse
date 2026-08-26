@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { loginUser } from "../features/auth/authApi";
-import { setLoading, setUser } from "../features/auth/authSlice";
+import { setUser } from "../features/auth/authSlice";
 import SEO from "../Components/SEO";
 
 export default function Login() {
@@ -21,6 +21,9 @@ export default function Login() {
     const navigate = useNavigate();
 
     const [showPassword, setShowPassword] =
+        useState(false);
+
+    const [submitting, setSubmitting] =
         useState(false);
 
     const [formData, setFormData] = useState({
@@ -38,23 +41,54 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        try {
-            dispatch(setLoading(true));
+        if (submitting) {
+            return;
+        }
 
-            const { data } = await loginUser(formData);
+        const email = formData.email.trim().toLowerCase();
+        const password = formData.password;
+
+        if (!email || !password) {
+            toast.error(
+                "Email and password are required."
+            );
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            const { data } = await loginUser({
+                email,
+                password,
+            });
+
+            if (!data?.success || !data?.user) {
+                throw new Error(
+                    data?.message || "Login failed."
+                );
+            }
 
             dispatch(setUser(data.user));
 
-            toast.success(data.message);
-
-            navigate("/");
-        } catch (error) {
-            toast.error(
-                error.response?.data?.message ||
-                "Login failed"
+            toast.success(
+                data.message || "Login successful."
             );
+
+            navigate("/", {
+                replace: true,
+            });
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                (error.code === "ECONNABORTED"
+                    ? "Server took too long to respond. Please try again."
+                    : error.message) ||
+                "Login failed.";
+
+            toast.error(message);
         } finally {
-            dispatch(setLoading(false));
+            setSubmitting(false);
         }
     };
 
@@ -66,13 +100,7 @@ export default function Login() {
             />
 
             <section className="souk-live-login">
-
-                {/* =================================================
-                    ANIMATED BACKGROUND
-                ================================================= */}
-
                 <div className="login-live-background">
-
                     <div className="login-gradient-orb orb-a" />
                     <div className="login-gradient-orb orb-b" />
                     <div className="login-gradient-orb orb-c" />
@@ -83,16 +111,9 @@ export default function Login() {
                     <div className="login-ring ring-one" />
                     <div className="login-ring ring-two" />
                     <div className="login-ring ring-three" />
-
                 </div>
 
-
-                {/* =================================================
-                    FLOATING PARTICLES
-                ================================================= */}
-
                 <div className="login-particles">
-
                     <span className="particle p1" />
                     <span className="particle p2" />
                     <span className="particle p3" />
@@ -103,65 +124,38 @@ export default function Login() {
                     <span className="particle p8" />
                     <span className="particle p9" />
                     <span className="particle p10" />
-
                 </div>
 
-
-                {/* =================================================
-                    MAIN CONTENT
-                ================================================= */}
-
                 <div className="live-login-stage">
-
-                    {/* =================================================
-                        BRAND SIDE
-                    ================================================= */}
-
                     <div className="live-brand">
-
                         <div className="brand-floating-symbol">
-
                             <Sparkles
                                 size={18}
                                 strokeWidth={1.3}
                             />
-
                         </div>
-
 
                         <div className="brand-kicker">
                             SOUK FASHION HOUSE
                         </div>
 
-
                         <h1 className="brand-title">
-
-                            <span>
-                                Elegance
-                            </span>
+                            <span>Elegance</span>
 
                             <span className="brand-title-script">
                                 in every
                             </span>
 
-                            <span>
-                                detail.
-                            </span>
-
+                            <span>detail.</span>
                         </h1>
 
-
                         <p className="brand-description">
-
                             A curated world of timeless
                             craftsmanship, luxurious textures
                             and contemporary Indian elegance.
-
                         </p>
 
-
                         <div className="brand-establishment">
-
                             <span className="brand-line" />
 
                             <span>
@@ -169,43 +163,19 @@ export default function Login() {
                             </span>
 
                             <span className="brand-line" />
-
                         </div>
-
                     </div>
 
-
-                    {/* =================================================
-                        LOGIN CARD
-                    ================================================= */}
-
                     <div className="live-login-card-wrap">
-
-                        {/* animated outer glow */}
-
                         <div className="login-card-glow" />
 
-
                         <div className="live-login-card">
-
-                            {/* animated border */}
-
                             <div className="login-card-border" />
-
-
-                            {/* shine */}
 
                             <div className="login-card-shine" />
 
-
                             <div className="live-login-content">
-
-                                {/* =================================================
-                                    CARD HEADER
-                                ================================================= */}
-
                                 <div className="live-login-header">
-
                                     <div className="mini-brand">
                                         SFH
                                     </div>
@@ -213,12 +183,9 @@ export default function Login() {
                                     <span>
                                         MEMBER ACCESS
                                     </span>
-
                                 </div>
 
-
                                 <div className="live-login-heading">
-
                                     <span className="heading-small">
                                         WELCOME BACK
                                     </span>
@@ -231,29 +198,18 @@ export default function Login() {
                                         Continue your journey
                                         with Souk Fashion House.
                                     </p>
-
                                 </div>
-
-
-                                {/* =================================================
-                                    FORM
-                                ================================================= */}
 
                                 <form
                                     onSubmit={handleSubmit}
                                     className="live-login-form"
                                 >
-
-                                    {/* EMAIL */}
-
                                     <div className="live-field">
-
                                         <label htmlFor="login-email">
                                             Email address
                                         </label>
 
                                         <div className="live-input">
-
                                             <Mail
                                                 size={16}
                                                 strokeWidth={1.5}
@@ -272,19 +228,15 @@ export default function Login() {
                                                 }
                                                 required
                                                 autoComplete="email"
+                                                disabled={
+                                                    submitting
+                                                }
                                             />
-
                                         </div>
-
                                     </div>
 
-
-                                    {/* PASSWORD */}
-
                                     <div className="live-field">
-
                                         <div className="live-password-label">
-
                                             <label htmlFor="login-password">
                                                 Password
                                             </label>
@@ -294,12 +246,9 @@ export default function Login() {
                                             >
                                                 Forgot password?
                                             </Link>
-
                                         </div>
 
-
                                         <div className="live-input">
-
                                             <LockKeyhole
                                                 size={16}
                                                 strokeWidth={1.5}
@@ -322,6 +271,9 @@ export default function Login() {
                                                 }
                                                 required
                                                 autoComplete="current-password"
+                                                disabled={
+                                                    submitting
+                                                }
                                             />
 
                                             <button
@@ -332,6 +284,14 @@ export default function Login() {
                                                         (prev) =>
                                                             !prev
                                                     )
+                                                }
+                                                disabled={
+                                                    submitting
+                                                }
+                                                aria-label={
+                                                    showPassword
+                                                        ? "Hide password"
+                                                        : "Show password"
                                                 }
                                             >
                                                 {showPassword ? (
@@ -346,69 +306,50 @@ export default function Login() {
                                                     />
                                                 )}
                                             </button>
-
                                         </div>
-
                                     </div>
-
-
-                                    {/* LOGIN BUTTON */}
 
                                     <button
                                         type="submit"
                                         className="live-login-button"
+                                        disabled={submitting}
+                                        aria-busy={
+                                            submitting
+                                        }
                                     >
-
                                         <span className="button-text">
-                                            ENTER THE HOUSE
+                                            {submitting
+                                                ? "ENTERING..."
+                                                : "ENTER THE HOUSE"}
                                         </span>
 
                                         <span className="button-arrow">
-
                                             <ArrowRight
                                                 size={17}
                                                 strokeWidth={1.5}
                                             />
-
                                         </span>
 
                                         <span className="button-shine" />
-
                                     </button>
-
                                 </form>
 
-
-                                {/* =================================================
-                                    REGISTER
-                                ================================================= */}
-
                                 <div className="live-register">
-
                                     <span>
                                         New to Souk?
                                     </span>
 
                                     <Link to="/register">
-
                                         Create your account
 
                                         <ArrowRight
                                             size={13}
                                             strokeWidth={1.6}
                                         />
-
                                     </Link>
-
                                 </div>
 
-
-                                {/* =================================================
-                                    FOOTER
-                                ================================================= */}
-
                                 <div className="live-card-footer">
-
                                     <span>
                                         SECURE ACCESS
                                     </span>
@@ -424,30 +365,19 @@ export default function Login() {
                                     <span>
                                         PRIVATE COLLECTION
                                     </span>
-
                                 </div>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
-
-                {/* =================================================
-                    BOTTOM DECORATION
-                ================================================= */}
 
                 <div className="login-bottom-mark">
-
                     <span />
-                    <small>SCROLL TO EXPLORE</small>
+                    <small>
+                        SCROLL TO EXPLORE
+                    </small>
                     <span />
-
                 </div>
-
             </section>
         </>
     );

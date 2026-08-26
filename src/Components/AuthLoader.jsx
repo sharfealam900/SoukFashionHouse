@@ -1,28 +1,58 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 
 import { getProfile } from "../features/auth/authApi";
 import { setLoading, setUser } from "../features/auth/authSlice";
 
+const PUBLIC_AUTH_ROUTES = new Set([
+    "/login",
+    "/register",
+    "/verify-otp",
+    "/forgot-password",
+    "/verify-reset-otp",
+    "/reset-password",
+]);
+
 export default function AuthLoader() {
-  const dispatch = useDispatch();
+    const dispatch = useDispatch();
+    const location = useLocation();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      dispatch(setLoading(true));
+    useEffect(() => {
+        let cancelled = false;
 
-      try {
-        const { data } = await getProfile();
-        dispatch(setUser(data.user));
-      } catch (error) {
-        dispatch(setUser(null));
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
+        if (PUBLIC_AUTH_ROUTES.has(location.pathname)) {
+            dispatch(setUser(null));
+            dispatch(setLoading(false));
+            return;
+        }
 
-    loadUser();
-  }, [dispatch]);
+        const loadUser = async () => {
+            dispatch(setLoading(true));
 
-  return null;
+            try {
+                const { data } = await getProfile();
+
+                if (!cancelled) {
+                    dispatch(setUser(data?.user || null));
+                }
+            } catch {
+                if (!cancelled) {
+                    dispatch(setUser(null));
+                }
+            } finally {
+                if (!cancelled) {
+                    dispatch(setLoading(false));
+                }
+            }
+        };
+
+        loadUser();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, location.pathname]);
+
+    return null;
 }
