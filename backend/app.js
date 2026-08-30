@@ -28,6 +28,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://souk-fashion-house-intk.vercel.app",
+  "https://soukfashionhouse.com",
+  "https://www.soukfashionhouse.com",
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
@@ -42,6 +44,7 @@ app.use(
         return callback(null, true);
       }
 
+      console.log("❌ CORS blocked origin:", origin);
       return callback(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
