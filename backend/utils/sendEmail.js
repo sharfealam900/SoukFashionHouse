@@ -1,79 +1,99 @@
-import nodemailer from "nodemailer";
+const sendEmail = async (email, subject, otp) => {
+    try {
+        const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
+            headers: {
+                accept: "application/json",
+                "api-key": process.env.BREVO_API_KEY,
+                "content-type": "application/json",
+            },
 
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+            body: JSON.stringify({
+                sender: {
+                    name: process.env.BREVO_SENDER_NAME,
+                    email: process.env.BREVO_SENDER_EMAIL,
+                },
 
-const sendEmail = async (
-    email,
-    subject,
-    otp
-) => {
+                to: [
+                    {
+                        email,
+                    },
+                ],
 
-    await transporter.sendMail({
-        from: `"SOUK Fashion House" <${process.env.EMAIL_USER}>`,
+                subject,
 
-        to: email,
+                htmlContent: `
+                    <div style="
+                        max-width:600px;
+                        margin:auto;
+                        font-family:Arial,sans-serif;
+                        background:#ffffff;
+                        border:1px solid #eee;
+                        padding:30px;
+                    ">
 
-        subject,
+                        <h2 style="
+                            text-align:center;
+                            color:#222;
+                        ">
+                            SOUK Fashion House
+                        </h2>
 
-        html: `
-            <div style="
-                max-width:600px;
-                margin:auto;
-                font-family:Arial,sans-serif;
-                background:#ffffff;
-                border:1px solid #eee;
-                padding:30px;
-            ">
+                        <p>Hello,</p>
 
-                <h2 style="
-                    text-align:center;
-                    color:#222;
-                ">
-                    SOUK Fashion House
-                </h2>
+                        <p>
+                            Your verification code is:
+                        </p>
 
-                <p>Hello,</p>
+                        <div style="
+                            font-size:34px;
+                            font-weight:bold;
+                            letter-spacing:8px;
+                            text-align:center;
+                            color:#111;
+                            margin:25px 0;
+                        ">
+                            ${otp}
+                        </div>
 
-                <p>
-                    Your verification code is:
-                </p>
+                        <p>
+                            This OTP is valid for
+                            <strong>10 minutes</strong>.
+                        </p>
 
-                <div style="
-                    font-size:34px;
-                    font-weight:bold;
-                    letter-spacing:8px;
-                    text-align:center;
-                    color:#111;
-                    margin:25px 0;
-                ">
-                    ${otp}
-                </div>
+                        <p>
+                            Do not share this code with anyone.
+                        </p>
 
-                <p>
-                    This OTP is valid for
-                    <strong>10 minutes</strong>.
-                </p>
+                        <br>
 
-                <p>
-                    Do not share this code with anyone.
-                </p>
+                        <p>Regards,</p>
 
-                <br>
+                        <strong>SOUK Fashion House</strong>
 
-                <p>Regards,</p>
+                    </div>
+                `,
+            }),
+        });
 
-                <strong>SOUK Fashion House</strong>
+        const data = await response.json();
 
-            </div>
-        `,
-    });
+        if (!response.ok) {
+            console.error("BREVO EMAIL ERROR:", data);
+
+            throw new Error(
+                data?.message || "Brevo email sending failed"
+            );
+        }
+
+        console.log("EMAIL SENT SUCCESSFULLY:", data.messageId);
+
+        return data;
+    } catch (error) {
+        console.error("EMAIL SENDING ERROR:", error);
+        throw error;
+    }
 };
 
 export default sendEmail;
