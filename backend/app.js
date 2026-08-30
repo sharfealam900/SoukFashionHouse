@@ -20,34 +20,41 @@ import bannerRoutes from "./routes/banner.route.js";
 import contactRoutes from "./routes/contact.routes.js";
 import paymentRoutes from "./routes/payment.route.js";
 
-
 dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://souk-fashion-house-intk.vercel.app",
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "https://souk-fashion-house-intk.vercel.app",
-    ],
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
-
 app.use(helmet());
-
 app.use(compression());
-
 app.use(morgan("dev"));
 
 app.get("/", (req, res) => {
@@ -56,6 +63,8 @@ app.get("/", (req, res) => {
     message: "Souk Fashion House API Running",
   });
 });
+
+// Your routes...
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
