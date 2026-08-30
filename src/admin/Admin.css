@@ -1,6 +1,4 @@
-/* =========================================================
-   ADMIN LAYOUT
-========================================================= */
+
 
 .admin-wrapper {
     display: flex;
@@ -604,33 +602,6 @@
     }
 }
 
-/* =========================================================
-   PRINT
-========================================================= */
-
-@media print {
-
-    @page {
-        size: A4;
-        margin: 10mm;
-    }
-
-    body {
-        margin: 0;
-        background: white;
-    }
-
-    .admin-sidebar,
-    .admin-header,
-    .mobile-menu-btn,
-    .admin-overlay {
-        display: none !important;
-    }
-
-    .admin-main {
-        padding: 0;
-    }
-}
 
 
 
@@ -1212,22 +1183,6 @@ body {
   z-index: 1500;
 }
 
-/* =========================================================
-   PRINT
-========================================================= */
-
-@media print {
-
-  @page {
-    size: A4;
-    margin: 10mm;
-  }
-
-  body {
-    margin: 0;
-    background: white;
-  }
-}
 
 
 
@@ -1269,51 +1224,6 @@ body {
 
 /* ================= HEADER ================= */
 
-.shipping-header {
-    display: flex;
-
-    justify-content: space-between;
-    align-items: flex-start;
-
-    padding-bottom: 8px;
-
-    border-bottom: 2px solid #111;
-}
-
-.shipping-brand {
-    font-size: 18px;
-    font-weight: 800;
-
-    letter-spacing: .3px;
-}
-
-.shipping-brand-sub {
-    font-size: 10px;
-    font-weight: 700;
-
-    letter-spacing: .8px;
-
-    margin-top: 1px;
-}
-
-.shipping-title {
-    text-align: right;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 2px;
-}
-
-.shipping-title strong {
-    font-size: 11px;
-    letter-spacing: .4px;
-}
-
-.shipping-title span {
-    font-size: 8px;
-    color: #666;
-}
 
 
 /* ================= ORDER INFO ================= */
@@ -1579,61 +1489,6 @@ body {
 }
 
 
-/* =========================================================
-   SHIPPING LABEL PRINT
-========================================================= */
-
-@media print {
-
-    @page {
-        size: 100mm 150mm;
-        margin: 0;
-    }
-
-    html,
-    body {
-        width: 100mm !important;
-        height: 150mm !important;
-
-        margin: 0 !important;
-        padding: 0 !important;
-
-        background: #fff !important;
-    }
-
-    body * {
-        visibility: hidden !important;
-    }
-
-    .shipping-label,
-    .shipping-label * {
-        visibility: visible !important;
-    }
-
-    .shipping-label {
-        position: absolute !important;
-
-        top: 0 !important;
-        left: 0 !important;
-
-        width: 100mm !important;
-        height: 150mm !important;
-
-        min-height: 150mm !important;
-
-        margin: 0 !important;
-
-        padding: 6mm !important;
-
-        box-sizing: border-box !important;
-
-        border: 1.2px solid #111 !important;
-
-        overflow: hidden !important;
-
-        background: #fff !important;
-    }
-}
 
 
 

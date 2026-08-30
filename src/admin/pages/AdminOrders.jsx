@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Form, Spinner, Table } from "react-bootstrap";
 import toast from "react-hot-toast";
 import {
@@ -15,71 +15,78 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [printType, setPrintType] = useState(null);
 
-  const printRef = useRef();
-  const labelRef = useRef();
+  const printRef = useRef(null);
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All");
 
+  // One print hook + one ref. The selected print type controls
+  // both the document title and the physical paper size.
+  const pageStyle =
+    printType === "label"
+      ? `
+        @page {
+          size: 100mm 150mm;
+          margin: 0 !important;
+        }
 
+        html, body {
+          width: 100mm !important;
+          height: 150mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+      `
+      : `
+        @page {
+          size: A4 portrait;
+          margin: 0 !important;
+        }
 
-  const handlePrintInvoice = useReactToPrint({
+        html, body {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+      `;
+
+  const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: "Invoice",
+    documentTitle:
+      printType === "label"
+        ? "SOUK Fashion House Shipping Label"
+        : "SOUK Fashion House Invoice",
+    pageStyle,
+    onAfterPrint: () => {
+      setPrintType(null);
+    },
   });
 
-
-  const handlePrintLabel = useReactToPrint({
-    contentRef: labelRef,
-    documentTitle: "Shipping Label",
-  });
-
-
-  const downloadPdf = () => {
-    exportOrdersPdf(filteredOrders);
+  const startPrint = (order, type) => {
+    setSelectedOrder(order);
+    setPrintType(type);
   };
 
+  useEffect(() => {
+    if (!selectedOrder || !printType) return;
 
-  const downloadExcel = async () => {
+    const timer = setTimeout(() => {
+      if (printRef.current) {
+        handlePrint();
+      }
+    }, 500);
 
-    try {
-
-      const response =
-        await exportOrdersExcel();
-
-      const url =
-        window.URL.createObjectURL(
-          new Blob([response.data])
-        );
-
-      const link =
-        document.createElement("a");
-
-      link.href = url;
-
-      link.download = "Orders.xlsx";
-
-      link.click();
-
-    } catch (error) {
-
-      toast.error(
-        "Unable to export."
-      );
-
-    }
-
-  };
-
-
-
-
+    return () => clearTimeout(timer);
+  }, [selectedOrder, printType, handlePrint]);
 
   const fetchOrders = async () => {
     try {
@@ -91,7 +98,7 @@ export default function AdminOrders() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "Failed to fetch orders"
+          "Failed to fetch orders"
       );
     } finally {
       setLoading(false);
@@ -102,9 +109,6 @@ export default function AdminOrders() {
     fetchOrders();
   }, []);
 
-
-
-
   const filteredOrders = useMemo(() => {
     const keyword = search.toLowerCase();
 
@@ -112,7 +116,7 @@ export default function AdminOrders() {
       const orderDate = new Date(order.createdAt);
 
       const matchesSearch =
-        order._id.toLowerCase().includes(keyword) ||
+        order._id?.toLowerCase().includes(keyword) ||
         order.user?.name?.toLowerCase().includes(keyword) ||
         order.user?.email?.toLowerCase().includes(keyword);
 
@@ -140,7 +144,6 @@ export default function AdminOrders() {
         matchesTo
       );
     });
-
   }, [
     orders,
     search,
@@ -150,12 +153,10 @@ export default function AdminOrders() {
     toDate,
   ]);
 
-
-
-
-
-
-  const handleStatusChange = async (orderId, status) => {
+  const handleStatusChange = async (
+    orderId,
+    status
+  ) => {
     try {
       await updateOrderStatus(orderId, status);
 
@@ -165,8 +166,37 @@ export default function AdminOrders() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "Unable to update order"
+          "Unable to update order"
       );
+    }
+  };
+
+  const downloadPdf = () => {
+    exportOrdersPdf(filteredOrders);
+  };
+
+  const downloadExcel = async () => {
+    try {
+      const response = await exportOrdersExcel();
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data])
+      );
+
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "Orders.xlsx";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Unable to export.");
     }
   };
 
@@ -217,54 +247,100 @@ export default function AdminOrders() {
 
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
-        <h2 className="fw-bold mb-0">Orders</h2>
+        <h2 className="fw-bold mb-0">
+          Orders
+        </h2>
 
         <div className="d-flex flex-wrap gap-2 align-items-center">
 
           <Form.Control
             type="date"
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={(e) =>
+              setFromDate(e.target.value)
+            }
             style={{ width: 170 }}
           />
 
           <Form.Control
             type="date"
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={(e) =>
+              setToDate(e.target.value)
+            }
             style={{ width: 170 }}
           />
 
           <Form.Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) =>
+              setStatusFilter(e.target.value)
+            }
             style={{ width: 170 }}
           >
-            <option value="All">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Packed">Packed</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="All">
+              All Status
+            </option>
+
+            <option value="Pending">
+              Pending
+            </option>
+
+            <option value="Confirmed">
+              Confirmed
+            </option>
+
+            <option value="Packed">
+              Packed
+            </option>
+
+            <option value="Shipped">
+              Shipped
+            </option>
+
+            <option value="Out for Delivery">
+              Out for Delivery
+            </option>
+
+            <option value="Delivered">
+              Delivered
+            </option>
+
+            <option value="Cancelled">
+              Cancelled
+            </option>
           </Form.Select>
 
           <Form.Select
             value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
+            onChange={(e) =>
+              setPaymentFilter(e.target.value)
+            }
             style={{ width: 170 }}
           >
-            <option value="All">All Payment</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
-            <option value="Failed">Failed</option>
+            <option value="All">
+              All Payment
+            </option>
+
+            <option value="Paid">
+              Paid
+            </option>
+
+            <option value="Pending">
+              Pending
+            </option>
+
+            <option value="Failed">
+              Failed
+            </option>
           </Form.Select>
 
           <Form.Control
             placeholder="Search..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             style={{ width: 250 }}
           />
 
@@ -296,7 +372,6 @@ export default function AdminOrders() {
           </button>
 
         </div>
-
       </div>
 
       <Table
@@ -305,7 +380,6 @@ export default function AdminOrders() {
         responsive
         className="align-middle"
       >
-
         <thead className="table-dark">
 
           <tr>
@@ -331,14 +405,12 @@ export default function AdminOrders() {
           {filteredOrders.length === 0 ? (
 
             <tr>
-
               <td
                 colSpan="11"
                 className="text-center py-5"
               >
                 No orders found.
               </td>
-
             </tr>
 
           ) : (
@@ -346,13 +418,18 @@ export default function AdminOrders() {
             filteredOrders.map((order) => (
 
               <tr key={order._id}>
+
                 <td>
-                  {order._id.slice(-8).toUpperCase()}
+                  {order._id
+                    ?.slice(-8)
+                    .toUpperCase()}
                 </td>
 
                 <td>
                   <div>
-                    <strong>{order.user?.name}</strong>
+                    <strong>
+                      {order.user?.name}
+                    </strong>
 
                     <br />
 
@@ -364,31 +441,52 @@ export default function AdminOrders() {
 
                 <td>
                   <div>
+
                     {order.discountAmount > 0 ? (
+
                       <>
                         <div className="fw-bold text-success">
-                          ₹{order.finalAmount?.toLocaleString("en-IN")}
+                          ₹
+                          {order.finalAmount?.toLocaleString(
+                            "en-IN"
+                          )}
                         </div>
 
                         <small className="text-muted text-decoration-line-through">
-                          ₹{order.totalAmount?.toLocaleString("en-IN")}
+                          ₹
+                          {order.totalAmount?.toLocaleString(
+                            "en-IN"
+                          )}
                         </small>
                       </>
+
                     ) : (
+
                       <span className="fw-bold">
-                        ₹{order.totalAmount?.toLocaleString("en-IN")}
+                        ₹
+                        {order.totalAmount?.toLocaleString(
+                          "en-IN"
+                        )}
                       </span>
+
                     )}
+
                   </div>
                 </td>
 
                 <td>
                   {order.couponCode ? (
+
                     <Badge bg="success">
                       {order.couponCode}
                     </Badge>
+
                   ) : (
-                    <span className="text-muted">—</span>
+
+                    <span className="text-muted">
+                      —
+                    </span>
+
                   )}
                 </td>
 
@@ -399,13 +497,21 @@ export default function AdminOrders() {
                 </td>
 
                 <td>
-                  <Badge bg={getPaymentBadge(order.paymentStatus)}>
+                  <Badge
+                    bg={getPaymentBadge(
+                      order.paymentStatus
+                    )}
+                  >
                     {order.paymentStatus}
                   </Badge>
                 </td>
 
                 <td>
-                  <Badge bg={getStatusBadge(order.orderStatus)}>
+                  <Badge
+                    bg={getStatusBadge(
+                      order.orderStatus
+                    )}
+                  >
                     {order.orderStatus}
                   </Badge>
                 </td>
@@ -415,10 +521,13 @@ export default function AdminOrders() {
                 </td>
 
                 <td>
-                  {new Date(order.createdAt).toLocaleDateString("en-IN")}
+                  {new Date(
+                    order.createdAt
+                  ).toLocaleDateString("en-IN")}
                 </td>
 
                 <td>
+
                   <Form.Select
                     size="sm"
                     value={order.orderStatus}
@@ -429,19 +538,39 @@ export default function AdminOrders() {
                       )
                     }
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Packed">Packed</option>
-                    <option value="Shipped">Shipped</option>
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Confirmed">
+                      Confirmed
+                    </option>
+
+                    <option value="Packed">
+                      Packed
+                    </option>
+
+                    <option value="Shipped">
+                      Shipped
+                    </option>
+
                     <option value="Out for Delivery">
                       Out for Delivery
                     </option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
+
+                    <option value="Delivered">
+                      Delivered
+                    </option>
+
+                    <option value="Cancelled">
+                      Cancelled
+                    </option>
                   </Form.Select>
+
                 </td>
 
                 <td>
+
                   <div className="d-flex gap-2">
 
                     <button
@@ -456,31 +585,30 @@ export default function AdminOrders() {
 
                     <button
                       className="btn btn-outline-success btn-sm"
-                      onClick={() => {
-                        setSelectedOrder(order);
-
-                        setTimeout(() => {
-                          handlePrintInvoice();
-                        }, 100);
-                      }}
+                      onClick={() =>
+                        startPrint(
+                          order,
+                          "invoice"
+                        )
+                      }
                     >
                       Invoice
                     </button>
 
                     <button
                       className="btn btn-outline-warning btn-sm"
-                      onClick={() => {
-                        setSelectedOrder(order);
-
-                        setTimeout(() => {
-                          handlePrintLabel();
-                        }, 100);
-                      }}
+                      onClick={() =>
+                        startPrint(
+                          order,
+                          "label"
+                        )
+                      }
                     >
                       Label
                     </button>
 
                   </div>
+
                 </td>
 
               </tr>
@@ -489,17 +617,24 @@ export default function AdminOrders() {
           )}
 
         </tbody>
-
       </Table>
+
       {showModal && selectedOrder && (
+
         <div
           className="modal fade show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          style={{
+            backgroundColor:
+              "rgba(0,0,0,0.5)",
+          }}
         >
+
           <div className="modal-dialog modal-lg modal-dialog-scrollable">
+
             <div className="modal-content">
 
               <div className="modal-header">
+
                 <h5 className="modal-title">
                   Order Details
                 </h5>
@@ -512,6 +647,7 @@ export default function AdminOrders() {
                     setSelectedOrder(null);
                   }}
                 />
+
               </div>
 
               <div className="modal-body">
@@ -541,14 +677,22 @@ export default function AdminOrders() {
 
                     <p className="mb-1">
                       <strong>Payment Status:</strong>{" "}
-                      <Badge bg={getPaymentBadge(selectedOrder.paymentStatus)}>
+                      <Badge
+                        bg={getPaymentBadge(
+                          selectedOrder.paymentStatus
+                        )}
+                      >
                         {selectedOrder.paymentStatus}
                       </Badge>
                     </p>
 
                     <p className="mb-1">
                       <strong>Order Status:</strong>{" "}
-                      <Badge bg={getStatusBadge(selectedOrder.orderStatus)}>
+                      <Badge
+                        bg={getStatusBadge(
+                          selectedOrder.orderStatus
+                        )}
+                      >
                         {selectedOrder.orderStatus}
                       </Badge>
                     </p>
@@ -578,12 +722,15 @@ export default function AdminOrders() {
 
                     <p
                       className="mb-0"
-                      style={{ whiteSpace: "pre-line" }}
+                      style={{
+                        whiteSpace: "pre-line",
+                      }}
                     >
                       <strong>Address:</strong>
                       <br />
                       {selectedOrder.shippingAddress?.address}
                     </p>
+
                   </div>
 
                 </div>
@@ -594,70 +741,96 @@ export default function AdminOrders() {
                   Ordered Products
                 </h5>
 
-                {selectedOrder.items?.map((item) => (
+                {selectedOrder.items?.map(
+                  (item, index) => (
 
-                  <div
-                    key={item._id}
-                    className="d-flex justify-content-between align-items-center border rounded p-3 mb-3"
-                  >
+                    <div
+                      key={item._id || index}
+                      className="d-flex justify-content-between align-items-center border rounded p-3 mb-3"
+                    >
 
-                    <div>
+                      <div>
 
-                      <h6 className="mb-1">
-                        {item.product?.name}
-                      </h6>
+                        <h6 className="mb-1">
+                          {item.product?.name}
+                        </h6>
 
-                      <small className="text-muted">
-                        Quantity :
-                        {" "}
-                        {item.quantity}
-                      </small>
+                        <small className="text-muted">
+                          Quantity :{" "}
+                          {item.quantity}
+                        </small>
+
+                      </div>
+
+                      <div className="fw-bold">
+                        ₹{item.price}
+                      </div>
 
                     </div>
 
-                    <div className="fw-bold">
-                      ₹{item.price}
-                    </div>
-
-                  </div>
-
-                ))}
+                  )
+                )}
 
                 <hr />
+
                 <div className="border rounded p-3">
 
                   <div className="d-flex justify-content-between mb-2">
-                    <span>Subtotal</span>
 
                     <span>
-                      ₹{selectedOrder.totalAmount?.toLocaleString("en-IN")}
+                      Subtotal
                     </span>
+
+                    <span>
+                      ₹
+                      {selectedOrder.totalAmount?.toLocaleString(
+                        "en-IN"
+                      )}
+                    </span>
+
                   </div>
 
                   <div className="d-flex justify-content-between mb-2">
-                    <span>Coupon</span>
+
+                    <span>
+                      Coupon
+                    </span>
 
                     <span className="text-success">
-                      {selectedOrder.couponCode || "No Coupon"}
+                      {selectedOrder.couponCode ||
+                        "No Coupon"}
                     </span>
+
                   </div>
 
                   <div className="d-flex justify-content-between mb-2">
-                    <span>Discount</span>
+
+                    <span>
+                      Discount
+                    </span>
 
                     <span className="text-danger">
-                      -₹{selectedOrder.discountAmount?.toLocaleString("en-IN")}
+                      -₹
+                      {selectedOrder.discountAmount?.toLocaleString(
+                        "en-IN"
+                      )}
                     </span>
+
                   </div>
 
                   <hr />
 
                   <div className="d-flex justify-content-between">
 
-                    <h5>Final Paid</h5>
+                    <h5>
+                      Final Paid
+                    </h5>
 
                     <h5 className="fw-bold text-success">
-                      ₹{selectedOrder.finalAmount?.toLocaleString("en-IN")}
+                      ₹
+                      {selectedOrder.finalAmount?.toLocaleString(
+                        "en-IN"
+                      )}
                     </h5>
 
                   </div>
@@ -681,42 +854,28 @@ export default function AdminOrders() {
               </div>
 
             </div>
+
           </div>
+
         </div>
+
       )}
 
-      <div
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: 0,
-        }}
-      >
-        <PrintInvoice
-          ref={printRef}
-          order={selectedOrder}
-        />
-      </div>
-
-
-
-      <div
-        style={{
-          position: "absolute",
-          left: "-9999px"
-        }}
-      >
-
-        <PrintShippingLabel
-          ref={labelRef}
-          order={selectedOrder}
-        />
-
-      </div>
-
-
-
-
+      {selectedOrder && printType && (
+        <div className="print-container">
+          {printType === "invoice" ? (
+            <PrintInvoice
+              ref={printRef}
+              order={selectedOrder}
+            />
+          ) : (
+            <PrintShippingLabel
+              ref={printRef}
+              order={selectedOrder}
+            />
+          )}
+        </div>
+      )}
 
     </div>
   );
