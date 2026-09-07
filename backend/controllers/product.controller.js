@@ -51,6 +51,148 @@ const optimizeProductImages = (
   }));
 };
 
+const optimizeColorVariants = (
+  variants,
+  width = 600
+) => {
+  if (!Array.isArray(variants)) {
+    return [];
+  }
+
+  return variants.map((variant) => ({
+    ...variant,
+    images: optimizeProductImages(
+      variant?.images,
+      width
+    ),
+  }));
+};
+
+const parseJson = (value, fallback) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+const parseColorVariants = (value) => {
+  const parsed = parseJson(value, []);
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((variant) => ({
+      name: String(variant?.name || "").trim(),
+      hex: String(variant?.hex || "").trim(),
+      images: Array.isArray(variant?.images)
+        ? variant.images
+        : [],
+    }))
+    .filter((variant) => variant.name);
+};
+
+const uploadProductFiles = async (files = []) => {
+  const uploadedImages = [];
+
+  for (const file of files) {
+    const result = await uploadToCloudinary(
+      file.buffer
+    );
+
+    uploadedImages.push({
+      url: result.secure_url,
+      public_id: result.public_id,
+    });
+  }
+
+  return uploadedImages;
+};
+
+const buildColorVariants = (metadata, uploadedImages) => {
+  return metadata.map((variant) => ({
+    name: variant.name,
+    hex: variant.hex || "",
+    images: (variant.images || [])
+      .map((entry) => {
+        if (entry?.type === "new") {
+          return uploadedImages[Number(entry.index)];
+        }
+
+        if (
+          entry?.type === "existing" &&
+          entry?.public_id
+        ) {
+          return {
+            url: entry.url || "",
+            public_id: entry.public_id,
+          };
+        }
+
+        return null;
+      })
+      .filter((image) => image?.public_id || image?.url),
+  }));
+};
+
+const flattenColorImages = (variants) => {
+  const seen = new Set();
+  const images = [];
+
+  for (const variant of variants || []) {
+    for (const image of variant.images || []) {
+      if (!image?.public_id && !image?.url) {
+        continue;
+      }
+
+      const key = image.public_id || image.url;
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      images.push(image);
+    }
+  }
+
+  return images;
+};
+
+const deleteCloudinaryImages = async (images = []) => {
+  const ids = [
+    ...new Set(
+      images
+        .map((image) => image?.public_id)
+        .filter(Boolean)
+    ),
+  ];
+
+  for (const publicId of ids) {
+    try {
+      await cloudinary.uploader.destroy(
+        publicId
+      );
+    } catch (error) {
+      console.error(
+        "CLOUDINARY DELETE ERROR:",
+        publicId,
+        error.message
+      );
+    }
+  }
+};
+
 const optimizeListProducts = (
   products,
   width = 600
@@ -125,6 +267,7 @@ export const createProduct = async (
       stock,
       sizes,
       colors,
+      colorVariants,
     } = req.body;
 
     let parsedSizes = [];
@@ -178,24 +321,26 @@ export const createProduct = async (
       });
     }
 
-    const uploadedImages = [];
+    const parsedColorVariants =
+      parseColorVariants(colorVariants);
 
-    if (
-      req.files &&
-      req.files.length > 0
-    ) {
-      for (const file of req.files) {
-        const result =
-          await uploadToCloudinary(
-            file.buffer
-          );
+    const uploadedImages =
+      await uploadProductFiles(
+        req.files || []
+      );
 
-        uploadedImages.push({
-          url: result.secure_url,
-          public_id: result.public_id,
-        });
-      }
-    }
+    const finalColorVariants =
+      buildColorVariants(
+        parsedColorVariants,
+        uploadedImages
+      );
+
+    const flattenedImages =
+      finalColorVariants.length > 0
+        ? flattenColorImages(
+            finalColorVariants
+          )
+        : uploadedImages;
 
     let slug = slugify(name, {
       lower: true,
@@ -224,8 +369,13 @@ export const createProduct = async (
         stock,
         sku,
         sizes: parsedSizes,
-        colors,
-        images: uploadedImages,
+        colors: finalColorVariants.length > 0
+          ? finalColorVariants.map(
+              (variant) => variant.name
+            )
+          : colors,
+        colorVariants: finalColorVariants,
+        images: flattenedImages,
       });
 
     return res.status(201).json({
@@ -462,6 +612,11 @@ export const getProduct = async (
             product.images,
             1200
           ),
+        colorVariants:
+          optimizeColorVariants(
+            product.colorVariants,
+            1200
+          ),
       },
     });
   } catch (error) {
@@ -493,6 +648,7 @@ export const updateProduct = async (
       stock,
       sizes,
       colors,
+      colorVariants,
       featured,
       isActive,
     } = req.body;
@@ -570,29 +726,64 @@ export const updateProduct = async (
       }
     }
 
-    const uploadedImages = [];
+    const uploadedImages =
+      await uploadProductFiles(
+        req.files || []
+      );
 
-    if (
-      req.files &&
-      req.files.length > 0
-    ) {
-      for (const file of req.files) {
-        const result =
-          await uploadToCloudinary(
-            file.buffer
-          );
+    let nextImages = product.images || [];
+    let nextColorVariants =
+      product.colorVariants || [];
 
-        uploadedImages.push({
-          url: result.secure_url,
-          public_id: result.public_id,
-        });
-      }
+    if (colorVariants !== undefined) {
+      const parsedColorVariants =
+        parseColorVariants(
+          colorVariants
+        );
+
+      nextColorVariants =
+        buildColorVariants(
+          parsedColorVariants,
+          uploadedImages
+        );
+
+      nextImages = flattenColorImages(
+        nextColorVariants
+      );
+
+      const oldImages = [
+        ...(product.images || []),
+        ...flattenColorImages(
+          product.colorVariants || []
+        ),
+      ];
+
+      const retainedIds = new Set(
+        nextImages
+          .map((image) => image.public_id)
+          .filter(Boolean)
+      );
+
+      const imagesToDelete =
+        oldImages.filter(
+          (image) =>
+            image.public_id &&
+            !retainedIds.has(
+              image.public_id
+            )
+        );
+
+      await deleteCloudinaryImages(
+        imagesToDelete
+      );
+    } else if (uploadedImages.length > 0) {
+      nextImages = [
+        ...(product.images || []),
+        ...uploadedImages,
+      ];
     }
 
-    product.images = [
-      ...product.images,
-      ...uploadedImages,
-    ];
+    product.images = nextImages;
 
     product.name =
       name ?? product.name;
@@ -623,8 +814,17 @@ export const updateProduct = async (
 
     product.sizes = parsedSizes;
 
-    product.colors =
-      colors ?? product.colors;
+    if (colorVariants !== undefined) {
+      product.colorVariants =
+        nextColorVariants;
+      product.colors =
+        nextColorVariants.map(
+          (variant) => variant.name
+        );
+    } else {
+      product.colors =
+        colors ?? product.colors;
+    }
 
     if (featured !== undefined) {
       product.featured = featured;
@@ -677,13 +877,12 @@ export const deleteProduct = async (
       });
     }
 
-    for (const image of product.images) {
-      if (image.public_id) {
-        await cloudinary.uploader.destroy(
-          image.public_id
-        );
-      }
-    }
+    await deleteCloudinaryImages([
+      ...(product.images || []),
+      ...flattenColorImages(
+        product.colorVariants || []
+      ),
+    ]);
 
     const result =
       await Cart.updateMany(
@@ -1009,28 +1208,73 @@ export const deleteProductImage =
         });
       }
 
-      const image =
+      let imageFound = false;
+      let imageToDelete = null;
+
+      const mainImage =
         product.images.find(
           (img) =>
             img.public_id === imageId
         );
 
-      if (!image) {
-        return res.status(404).json({
-          success: false,
-          message: "Image not found",
-        });
+      if (mainImage) {
+        imageFound = true;
+        imageToDelete = mainImage;
       }
-
-      await cloudinary.uploader.destroy(
-        image.public_id
-      );
 
       product.images =
         product.images.filter(
           (img) =>
             img.public_id !== imageId
         );
+
+      product.colorVariants =
+        (product.colorVariants || []).map(
+          (variant) => {
+            const matched =
+              variant.images.find(
+                (img) =>
+                  img.public_id === imageId
+              );
+
+            if (matched) {
+              imageFound = true;
+              imageToDelete =
+                imageToDelete || matched;
+            }
+
+            return {
+              name: variant.name,
+              hex: variant.hex,
+              images: variant.images.filter(
+                (img) =>
+                  img.public_id !== imageId
+              ),
+            };
+          }
+        );
+
+      if (!imageFound) {
+        return res.status(404).json({
+          success: false,
+          message: "Image not found",
+        });
+      }
+
+      if (imageToDelete?.public_id) {
+        await cloudinary.uploader.destroy(
+          imageToDelete.public_id
+        );
+      }
+
+      const variantImages =
+        flattenColorImages(
+          product.colorVariants
+        );
+
+      if (variantImages.length > 0) {
+        product.images = variantImages;
+      }
 
       await product.save();
 

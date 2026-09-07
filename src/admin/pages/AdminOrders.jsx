@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Form, Spinner, Table } from "react-bootstrap";
+import { Badge, Form, Pagination, Spinner, Table } from "react-bootstrap";
 import toast from "react-hot-toast";
 import {
   exportOrdersExcel,
@@ -25,9 +25,8 @@ export default function AdminOrders() {
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All");
+  const [datePage, setDatePage] = useState(1);
 
-  // One print hook + one ref. The selected print type controls
-  // both the document title and the physical paper size.
   const pageStyle =
     printType === "label"
       ? `
@@ -152,6 +151,78 @@ export default function AdminOrders() {
     fromDate,
     toDate,
   ]);
+
+  const dateGroups = useMemo(() => {
+    const groups = new Map();
+
+    filteredOrders.forEach((order) => {
+      const key = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(order.createdAt));
+
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+
+      groups.get(key).push(order);
+    });
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, dateOrders]) => ({
+        date,
+        orders: dateOrders.sort(
+          (a, b) =>
+            new Date(b.createdAt) -
+            new Date(a.createdAt)
+        ),
+      }));
+  }, [filteredOrders]);
+
+  useEffect(() => {
+    setDatePage(1);
+  }, [search, statusFilter, paymentFilter, fromDate, toDate]);
+
+  const currentDateGroup = dateGroups[datePage - 1] || null;
+  const paginatedOrders = currentDateGroup?.orders || [];
+  const totalDatePages = dateGroups.length;
+
+  const formatDateHeading = (date) => {
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+
+    const yesterday = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(yesterdayDate);
+
+    if (date === today) return "Today";
+    if (date === yesterday) return "Yesterday";
+
+    const [year, month, day] = date.split("-");
+
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day)
+    ).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
   const handleStatusChange = async (
     orderId,
@@ -366,6 +437,7 @@ export default function AdminOrders() {
               setToDate("");
               setStatusFilter("All");
               setPaymentFilter("All");
+              setDatePage(1);
             }}
           >
             Reset
@@ -373,6 +445,22 @@ export default function AdminOrders() {
 
         </div>
       </div>
+
+      {currentDateGroup && (
+        <div className="d-flex justify-content-between align-items-center mb-3 px-1">
+          <div>
+            <h4 className="fw-bold mb-1">
+              {formatDateHeading(currentDateGroup.date)}
+            </h4>
+            <div className="text-muted small">
+              {currentDateGroup.orders.length} {currentDateGroup.orders.length === 1 ? "order" : "orders"} on this date
+            </div>
+          </div>
+          <div className="text-muted small">
+            Page {datePage} of {totalDatePages}
+          </div>
+        </div>
+      )}
 
       <Table
         bordered
@@ -402,7 +490,7 @@ export default function AdminOrders() {
 
         <tbody>
 
-          {filteredOrders.length === 0 ? (
+          {paginatedOrders.length === 0 ? (
 
             <tr>
               <td
@@ -415,7 +503,7 @@ export default function AdminOrders() {
 
           ) : (
 
-            filteredOrders.map((order) => (
+            paginatedOrders.map((order) => (
 
               <tr key={order._id}>
 
@@ -618,6 +706,48 @@ export default function AdminOrders() {
 
         </tbody>
       </Table>
+
+      {totalDatePages > 1 && (
+        <div className="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap">
+          <button
+            type="button"
+            className="btn btn-outline-dark btn-sm"
+            disabled={datePage === 1}
+            onClick={() => setDatePage((page) => Math.max(1, page - 1))}
+          >
+            Previous Day
+          </button>
+
+          <Pagination className="mb-0">
+            {dateGroups.map((group, index) => (
+              <Pagination.Item
+                key={group.date}
+                active={datePage === index + 1}
+                onClick={() => setDatePage(index + 1)}
+              >
+                {index === 0
+                  ? "Today"
+                  : index === 1
+                    ? "Yesterday"
+                    : index + 1}
+              </Pagination.Item>
+            ))}
+          </Pagination>
+
+          <button
+            type="button"
+            className="btn btn-outline-dark btn-sm"
+            disabled={datePage === totalDatePages}
+            onClick={() =>
+              setDatePage((page) =>
+                Math.min(totalDatePages, page + 1)
+              )
+            }
+          >
+            Next Day
+          </button>
+        </div>
+      )}
 
       {showModal && selectedOrder && (
 

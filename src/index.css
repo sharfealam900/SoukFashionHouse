@@ -30288,3 +30288,475 @@ RESPONSIVE
 
 
 
+
+.souk-product-page {
+  background: #f8f6f1;
+  min-height: 100vh;
+  padding: 54px 0 80px;
+}
+
+.souk-product-shell {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(380px, .95fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.souk-product-gallery {
+  min-width: 0;
+}
+
+.souk-product-main-image-box {
+  background: #e9e9e7;
+  border-radius: 14px;
+  min-height: 0;
+  aspect-ratio: 1 / 1.12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.souk-product-main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.souk-product-thumbnails {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.souk-product-thumbnail {
+  width: 78px;
+  height: 88px;
+  padding: 0;
+  flex: 0 0 78px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #eee;
+  cursor: pointer;
+}
+
+.souk-product-thumbnail.active {
+  border-color: #111;
+}
+
+.souk-product-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.souk-product-info {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.05);
+}
+
+.souk-product-category {
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #777;
+  margin-bottom: 7px;
+}
+
+.souk-product-info h1 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 0 0 10px;
+  color: #111;
+}
+
+.souk-product-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #777;
+  font-size: 12px;
+}
+
+.souk-stars {
+  display: flex;
+  gap: 2px;
+  color: #b99238;
+}
+
+.souk-product-price {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+.souk-product-price strong {
+  font-size: 24px;
+  color: #111;
+}
+
+.souk-old-price {
+  font-size: 14px;
+  color: #888;
+  text-decoration: line-through;
+}
+
+.souk-discount {
+  font-size: 10px;
+  font-weight: 700;
+  background: #111;
+  color: #fff;
+  padding: 4px 7px;
+  border-radius: 3px;
+}
+
+.souk-short-description {
+  color: #666;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+.souk-option-group {
+  margin: 18px 0;
+}
+
+.souk-option-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.souk-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.souk-size-option {
+  min-width: 42px;
+  height: 36px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.souk-size-option.selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.souk-size-option.disabled {
+  opacity: .4;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.souk-color-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.souk-color-option {
+  width: 31px;
+  height: 31px;
+  padding: 3px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.souk-color-option span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.souk-color-option.selected {
+  border: 2px solid #111;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #111;
+}
+
+.souk-selected-color {
+  font-size: 11px;
+  color: #666;
+  margin-top: 7px;
+}
+
+.souk-quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 20px 0 14px;
+}
+
+.souk-quantity-row button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.souk-quantity-row button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.souk-quantity-row span {
+  min-width: 14px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.souk-action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.souk-add-cart {
+  flex: 1;
+  height: 42px;
+  border: 0;
+  border-radius: 7px;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.souk-add-cart:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.souk-wishlist {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.souk-wishlist.active {
+  color: #111;
+}
+
+.souk-accordion-list {
+  margin-top: 12px;
+}
+
+.souk-accordion {
+  border: 1px solid #e7e4de;
+  border-radius: 9px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.souk-accordion > button {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.souk-accordion-content {
+  padding: 0 14px 14px;
+  color: #666;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.souk-accordion-content p {
+  margin: 0 0 8px;
+}
+
+.souk-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.souk-detail-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.souk-detail-grid span {
+  color: #999;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.souk-detail-grid strong {
+  color: #333;
+  font-size: 11px;
+}
+
+.souk-related-section {
+  width: min(1180px, calc(100% - 40px));
+  margin: 72px auto 0;
+}
+
+.souk-related-section h2 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 30px;
+}
+
+.souk-related-empty {
+  text-align: center;
+  color: #777;
+}
+
+.souk-admin-product .souk-admin-color-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.souk-admin-color-header h5 {
+  margin: 0 0 4px;
+}
+
+.souk-admin-color-header p {
+  margin: 0;
+  color: #777;
+}
+
+.souk-admin-color-card {
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  background: #fafafa;
+}
+
+.souk-admin-color-input {
+  height: 38px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+}
+
+.souk-admin-color-input input {
+  width: 34px;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.souk-admin-color-input span {
+  font-size: 13px;
+  color: #555;
+}
+
+.souk-admin-image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.souk-admin-image-item {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  background: #eee;
+}
+
+.souk-admin-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.souk-admin-image-item button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+.souk-admin-empty-colors {
+  border: 1px dashed #ccc;
+  border-radius: 10px;
+  padding: 28px;
+  text-align: center;
+  color: #777;
+}
+
+@media (max-width: 900px) {
+  .souk-product-shell {
+    grid-template-columns: 1fr;
+  }
+  .souk-product-info {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 576px) {
+  .souk-product-page {
+    padding: 24px 0 50px;
+  }
+  .souk-product-shell,
+  .souk-related-section {
+    width: min(100% - 24px, 1180px);
+  }
+  .souk-product-info h1 {
+    font-size: 25px;
+  }
+  .souk-product-main-image-box {
+    aspect-ratio: 1 / 1.18;
+  }
+  .souk-admin-color-header {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+}

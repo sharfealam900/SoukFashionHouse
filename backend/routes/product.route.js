@@ -21,41 +21,18 @@ import {
 
 const router = express.Router();
 
-router.get(
-  "/home-sections",
-  getHomeSections
-);
-
-router.get(
-  "/best-sellers",
-  getBestSellers
-);
-
-router.get(
-  "/new-arrivals",
-  getNewArrivals
-);
-
-router.get(
-  "/related/:categoryId/:productId",
-  getRelatedProducts
-);
-
-router.get(
-  "/",
-  getProducts
-);
-
-router.get(
-  "/:id",
-  getProduct
-);
+router.get("/home-sections", getHomeSections);
+router.get("/best-sellers", getBestSellers);
+router.get("/new-arrivals", getNewArrivals);
+router.get("/related/:categoryId/:productId", getRelatedProducts);
+router.get("/", getProducts);
+router.get("/:id", getProduct);
 
 router.post(
   "/",
   protect,
   isAdmin,
-  upload.array("images", 5),
+  upload.array("images", 30),
   createProduct
 );
 
@@ -63,7 +40,7 @@ router.put(
   "/:id",
   protect,
   isAdmin,
-  upload.array("images", 5),
+  upload.array("images", 30),
   updateProduct
 );
 

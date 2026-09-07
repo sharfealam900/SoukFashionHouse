@@ -199,7 +199,7 @@ export default function OrderSummary({
                 <div className="checkout-product-image-wrapper">
 
                   <img
-                    src={item.product.images?.[0]?.url}
+                    src={item.product.colorVariants?.find((variant) => variant.name?.toLowerCase() === String(item.color || "").toLowerCase())?.images?.[0]?.url || item.product.images?.[0]?.url}
                     alt={item.product.name}
                     className="checkout-product-image"
                   />
