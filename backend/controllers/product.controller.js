@@ -136,23 +136,6 @@ const parseProductDetails = (value) => {
   return details;
 };
 
-/*
-  This allows the backend to accept the product-detail
-  fields individually as well.
-
-  Example:
-
-  formData.append("productType", "Kashmiri Ari Work Kurti");
-  formData.append("fabric", "Premium Ruby Cotton");
-  formData.append("work", "Kashmiri Ari Manual Work");
-
-  It also remains compatible with:
-
-  formData.append(
-    "productDetails",
-    JSON.stringify({...})
-  );
-*/
 
 const buildProductDetailsFromRequest = (body) => {
   const jsonDetails = parseProductDetails(
