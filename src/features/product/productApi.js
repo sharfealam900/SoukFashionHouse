@@ -1,6 +1,6 @@
 import api from "../../api/axios";
 
-let homeSectionsRequest = null;
+
 
 export const getProducts = (params = {}) => {
   return api.get("/products", {
@@ -13,16 +13,11 @@ export const getProduct = (id) => {
 };
 
 export const getHomeSections = () => {
-  if (!homeSectionsRequest) {
-    homeSectionsRequest = api
-      .get("/products/home-sections")
-      .catch((error) => {
-        homeSectionsRequest = null;
-        throw error;
-      });
-  }
-
-  return homeSectionsRequest;
+  return api.get("/products/home-sections", {
+    params: {
+      _t: Date.now(),
+    },
+  });
 };
 
 export const createProduct = (formData) => {

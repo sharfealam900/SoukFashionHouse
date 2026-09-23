@@ -118,19 +118,19 @@ const parseProductDetails = (value) => {
   details.careInstructions =
     Array.isArray(parsed.careInstructions)
       ? parsed.careInstructions
-          .map((item) =>
-            String(item ?? "").trim()
-          )
-          .filter(Boolean)
+        .map((item) =>
+          String(item ?? "").trim()
+        )
+        .filter(Boolean)
       : [];
 
   details.deliveryServices =
     Array.isArray(parsed.deliveryServices)
       ? parsed.deliveryServices
-          .map((item) =>
-            String(item ?? "").trim()
-          )
-          .filter(Boolean)
+        .map((item) =>
+          String(item ?? "").trim()
+        )
+        .filter(Boolean)
       : [];
 
   return details;
@@ -183,10 +183,10 @@ const buildProductDetailsFromRequest = (body) => {
     details.careInstructions =
       Array.isArray(care)
         ? care
-            .map((item) =>
-              String(item ?? "").trim()
-            )
-            .filter(Boolean)
+          .map((item) =>
+            String(item ?? "").trim()
+          )
+          .filter(Boolean)
         : [];
   }
 
@@ -199,10 +199,10 @@ const buildProductDetailsFromRequest = (body) => {
     details.deliveryServices =
       Array.isArray(delivery)
         ? delivery
-            .map((item) =>
-              String(item ?? "").trim()
-            )
-            .filter(Boolean)
+          .map((item) =>
+            String(item ?? "").trim()
+          )
+          .filter(Boolean)
         : [];
   }
 
@@ -883,19 +883,19 @@ export const getProducts = async (
 
     const search =
       typeof req.query.search ===
-      "string"
+        "string"
         ? req.query.search.trim()
         : "";
 
     const category =
       typeof req.query.category ===
-      "string"
+        "string"
         ? req.query.category.trim()
         : "";
 
     const sort =
       typeof req.query.sort ===
-      "string"
+        "string"
         ? req.query.sort
         : "featured";
 
@@ -1261,11 +1261,11 @@ export const updateProduct =
             undefined
         ) ||
         req.body.productDetails !==
-          undefined ||
+        undefined ||
         req.body.careInstructions !==
-          undefined ||
+        undefined ||
         req.body.deliveryServices !==
-          undefined;
+        undefined;
 
       if (
         hasProductDetailField
@@ -1286,7 +1286,7 @@ export const updateProduct =
       if (
         name &&
         name.trim() !==
-          product.name
+        product.name
       ) {
         nextSlug =
           await createUniqueSlug(
@@ -1345,7 +1345,7 @@ export const updateProduct =
 
           ...flattenColorImages(
             product.colorVariants ||
-              []
+            []
           ),
         ];
 
@@ -1596,7 +1596,7 @@ export const deleteProduct =
 
         ...flattenColorImages(
           product.colorVariants ||
-            []
+          []
         ),
       ];
 
@@ -1841,39 +1841,10 @@ export const getNewArrivals =
    HOME PAGE SECTIONS
 ========================================================= */
 
-let homeSectionsCache = null;
-let homeSectionsCacheTime = 0;
 
 export const getHomeSections =
   async (req, res) => {
     try {
-      const now = Date.now();
-
-      /*
-        30 second server-side cache
-      */
-
-      if (
-        homeSectionsCache &&
-        now -
-          homeSectionsCacheTime <
-          30000
-      ) {
-        res.set(
-          "Cache-Control",
-          "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
-        );
-
-        return res.status(200).json({
-          success: true,
-
-          bestSellers:
-            homeSectionsCache.bestSellers,
-
-          newArrivals:
-            homeSectionsCache.newArrivals,
-        });
-      }
 
       const [
         bestSellers,
@@ -1925,21 +1896,12 @@ export const getHomeSections =
           600
         );
 
-      homeSectionsCache = {
-        bestSellers:
-          optimizedBestSellers,
-
-        newArrivals:
-          optimizedNewArrivals,
-      };
-
-      homeSectionsCacheTime =
-        now;
-
       res.set(
         "Cache-Control",
-        "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
       );
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
 
       return res.status(200).json({
         success: true,
