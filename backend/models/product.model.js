@@ -22,6 +22,125 @@ const colorVariantSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const productDetailsSchema = new mongoose.Schema(
+  {
+    productType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    fabric: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    work: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    pattern: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    neckType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    sleeveType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    fit: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    colour: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    season: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    sizesAvailable: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    closure: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    occasion: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    length: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    packageContains: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    workmanship: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    countryOfOrigin: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    careInstructions: {
+      type: [String],
+      default: [],
+    },
+
+    deliveryServices: {
+      type: [String],
+      default: [],
+    },
+
+    note: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -37,6 +156,10 @@ const productSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
+    },
+    productDetails: {
+      type: productDetailsSchema,
+      default: () => ({}),
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,

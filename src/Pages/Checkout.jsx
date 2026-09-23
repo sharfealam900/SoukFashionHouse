@@ -14,6 +14,7 @@ export default function Checkout() {
         phone: "",
         email: "",
         address: "",
+      
     });
 
     const [couponCode, setCouponCode] = useState("");
