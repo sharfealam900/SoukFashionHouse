@@ -407,9 +407,14 @@ export const loginUser = async (req, res) => {
 
 
 export const logoutUser = (req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", "", {
         httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         expires: new Date(0),
+        path: "/",
     });
 
     res.status(200).json({
@@ -887,46 +892,46 @@ export const resetPassword = async (req, res) => {
 
 
 export const resendResetOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+    try {
+        const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required.",
-      });
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required.",
+            });
+        }
+
+        const otpData = await ResetOtp.findOne({ email });
+
+        if (!otpData) {
+            return res.status(404).json({
+                success: false,
+                message: "Reset session expired. Please try again.",
+            });
+        }
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+
+        otpData.otp = otp;
+        otpData.isVerified = false;
+        otpData.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await otpData.save();
+
+        sendEmail(email, "Reset Your Password", otp).catch((error) => {
+            console.error(error);
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "A new OTP has been sent to your email.",
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
-
-    const otpData = await ResetOtp.findOne({ email });
-
-    if (!otpData) {
-      return res.status(404).json({
-        success: false,
-        message: "Reset session expired. Please try again.",
-      });
-    }
-
-    const otp = crypto.randomInt(100000, 999999).toString();
-
-    otpData.otp = otp;
-    otpData.isVerified = false;
-    otpData.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await otpData.save();
-
-    sendEmail(email, "Reset Your Password", otp).catch((error) => {
-      console.error(error);
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "A new OTP has been sent to your email.",
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };

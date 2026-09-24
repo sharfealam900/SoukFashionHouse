@@ -66,6 +66,8 @@ export default function Navbar() {
 
   const [scrolled, setScrolled] = useState(false);
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   /* =========================
      GET CATEGORIES
   ========================= */
@@ -233,43 +235,63 @@ export default function Navbar() {
     setProfileDropdown((prev) => !prev);
   };
 
-  /* =========================
-     LOGOUT
-  ========================= */
 
-  const logoutHandler = async () => {
-    try {
-      /*
-        Call backend first.
-        This keeps the existing logout functionality.
-      */
-      await api.post("/users/logout");
-    } catch (error) {
-      /*
-        Even if the server returns 401 because
-        the session is already expired, we still
-        clear the frontend state.
-      */
-      console.error(
-        "Logout request:",
-        error?.response?.status || error
-      );
-    } finally {
-      /*
-        Always clear local authentication state.
-      */
-      dispatch(logout());
-      dispatch(clearWishlist());
-      dispatch(clearCart());
 
-      setProfileDropdown(false);
-      setMobileMenu(false);
-      setDropdown(false);
+const logoutHandler = async () => {
+  if (isLoggingOut) return;
 
-      navigate("/", { replace: true });
-    }
-  };
+  setIsLoggingOut(true);
 
+  try {
+    await api.post("/users/logout");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userid");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    dispatch(logout());
+    dispatch(clearWishlist());
+    dispatch(clearCart());
+
+    setProfileDropdown(false);
+    setMobileMenu(false);
+    setDropdown(false);
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 900);
+    });
+
+    navigate("/", {
+      replace: true,
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userid");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    dispatch(logout());
+    dispatch(clearWishlist());
+    dispatch(clearCart());
+
+    setProfileDropdown(false);
+    setMobileMenu(false);
+    setDropdown(false);
+
+    navigate("/", {
+      replace: true,
+    });
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
   /* =========================
      NAVIGATION HELPER
   ========================= */
@@ -282,10 +304,28 @@ export default function Navbar() {
 
   return (
     <>
+      {isLoggingOut && (
+        <div className="souk-logout-overlay">
+          <div className="souk-logout-card">
+            <div className="souk-logout-icon">
+              <div className="souk-logout-spinner"></div>
+            </div>
+
+            <h3>Logging you out</h3>
+
+            <p>
+              Thank you for visiting Souk Fashion House
+            </p>
+          </div>
+        </div>
+      )}
+
+
+
+
       <header
-        className={`navbar ${
-          scrolled ? "active" : ""
-        }`}
+        className={`navbar ${scrolled ? "active" : ""
+          }`}
       >
         <div className="navbar-container">
 
@@ -481,11 +521,10 @@ export default function Navbar() {
 
               <button
                 type="button"
-                className={`profile-btn ${
-                  profileDropdown
-                    ? "profile-open"
-                    : ""
-                }`}
+                className={`profile-btn ${profileDropdown
+                  ? "profile-open"
+                  : ""
+                  }`}
                 onClick={handleProfileClick}
                 aria-label="Account menu"
               >
@@ -499,11 +538,10 @@ export default function Navbar() {
               ================================= */}
 
               <div
-                className={`profile-menu ${
-                  profileDropdown
-                    ? "profile-menu-open"
-                    : ""
-                }`}
+                className={`profile-menu ${profileDropdown
+                  ? "profile-menu-open"
+                  : ""
+                  }`}
                 onClick={(e) =>
                   e.stopPropagation()
                 }
@@ -682,20 +720,18 @@ export default function Navbar() {
       ========================================= */}
 
       <div
-        className={`mobile-menu-overlay ${
-          mobileMenu
-            ? "mobile-overlay-open"
-            : ""
-        }`}
+        className={`mobile-menu-overlay ${mobileMenu
+          ? "mobile-overlay-open"
+          : ""
+          }`}
         onClick={closeMobileMenu}
       />
 
       <aside
-        className={`mobile-menu ${
-          mobileMenu
-            ? "mobile-menu-open"
-            : ""
-        }`}
+        className={`mobile-menu ${mobileMenu
+          ? "mobile-menu-open"
+          : ""
+          }`}
       >
 
         {/* =========================

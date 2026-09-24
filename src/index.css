@@ -33572,3 +33572,109 @@ RESPONSIVE
     letter-spacing: 1.6px;
   }
 }
+
+
+
+.souk-logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  animation: soukLogoutFadeIn 0.25s ease;
+}
+
+.souk-logout-card {
+  width: min(90%, 360px);
+  padding: 38px 30px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  animation: soukLogoutCardIn 0.35s ease;
+}
+
+.souk-logout-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 22px;
+  border: 1px solid #d4af37;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.souk-logout-spinner {
+  width: 25px;
+  height: 25px;
+  border: 2px solid #eeeeee;
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: soukLogoutSpin 0.8s linear infinite;
+}
+
+.souk-logout-card h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 21px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.souk-logout-card p {
+  margin: 9px 0 0;
+  font-size: 13px;
+  color: #888888;
+  line-height: 1.5;
+}
+
+@keyframes soukLogoutSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes soukLogoutFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes soukLogoutCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
