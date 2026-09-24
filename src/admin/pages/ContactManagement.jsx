@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../api/axios";
+import PageLoader from "../../Components/PageLoader";
 
 export default function ContactManagement() {
 
@@ -108,8 +109,7 @@ export default function ContactManagement() {
                                         colSpan="8"
                                         className="text-center"
                                     >
-
-                                        Loading...
+                                        <PageLoader />
 
                                     </td>
 
@@ -172,10 +172,10 @@ export default function ContactManagement() {
 
                                                 <span
                                                     className={`badge ${item.status === "New"
-                                                            ? "bg-danger"
-                                                            : item.status === "Read"
-                                                                ? "bg-warning text-dark"
-                                                                : "bg-success"
+                                                        ? "bg-danger"
+                                                        : item.status === "Read"
+                                                            ? "bg-warning text-dark"
+                                                            : "bg-success"
                                                         }`}
                                                 >
 

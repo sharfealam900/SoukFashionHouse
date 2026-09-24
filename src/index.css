@@ -33451,3 +33451,124 @@ RESPONSIVE
 
 
 
+.souk-page-loader {
+  min-height: calc(100vh - 112px);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 60px 20px;
+}
+
+.souk-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.souk-loader-mark {
+  width: 64px;
+  height: 64px;
+  border: 1px solid #d4af37;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+  position: relative;
+  animation: soukLogoPulse 2s ease-in-out infinite;
+}
+
+.souk-loader-mark::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 50%;
+}
+
+.souk-loader-mark span {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 500;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.souk-loader-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #eeeeee;
+  border-top-color: #d4af37;
+  animation: soukSpin 0.9s linear infinite;
+  margin-bottom: 20px;
+}
+
+.souk-loader-content p {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: #222222;
+}
+
+.souk-loader-subtitle {
+  margin-top: 7px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #999999;
+}
+
+@keyframes soukSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes soukLogoPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: 0.75;
+  }
+}
+
+@media (max-width: 768px) {
+  .souk-page-loader {
+    min-height: calc(100vh - 90px);
+    padding: 40px 16px;
+  }
+
+  .souk-loader-mark {
+    width: 56px;
+    height: 56px;
+  }
+
+  .souk-loader-mark span {
+    font-size: 26px;
+  }
+
+  .souk-loader-content p {
+    font-size: 16px;
+  }
+
+  .souk-loader-subtitle {
+    font-size: 9px;
+    letter-spacing: 1.6px;
+  }
+}

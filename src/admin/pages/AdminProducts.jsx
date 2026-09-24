@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteProduct, getProducts } from "../services/adminApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import PageLoader from "../../Components/PageLoader";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -208,9 +209,7 @@ export default function AdminProducts() {
             className="spinner-border text-primary mb-3"
             role="status"
           >
-            <span className="visually-hidden">
-              Loading...
-            </span>
+  <PageLoader />
           </div>
 
           <h6 className="text-muted">

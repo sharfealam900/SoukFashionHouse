@@ -9,6 +9,7 @@ import { getOrderDetails, cancelOrder, } from "../features/order/orderApi";
 import { toast } from "react-hot-toast";
 import OrderTracking from "../Components/OrderTracking";
 import SEO from "../Components/SEO";
+import PageLoader from "../Components/PageLoader";
 
 
 export default function OrderDetails() {
@@ -51,9 +52,7 @@ export default function OrderDetails() {
     return (
       <>
         <Navbar />
-        <div className="container py-5">
-          Loading...
-        </div>
+        <PageLoader />
         <Footer />
       </>
     );

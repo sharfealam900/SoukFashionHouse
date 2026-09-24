@@ -37,6 +37,7 @@ import ProductCard from "../Components/Product/ProductCard";
 import ReviewList from "../Components/Reviews/ReviewList";
 import DeliveryEstimator from "../Components/Delivery/DeliveryEstimator";
 import KurtiSizeChart from "../Components/Product/KurtiSizeChart";
+import PageLoader from "../Components/PageLoader";
 
 
 
@@ -604,9 +605,7 @@ const ProductDetails = () => {
             <>
                 <Navbar />
 
-                <div className="loading-page">
-                    <h2>Loading...</h2>
-                </div>
+                <PageLoader />
 
                 <Footer />
             </>
